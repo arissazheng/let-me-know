@@ -1,0 +1,57 @@
+name: LetMeKnow
+options:
+  bundleIdPrefix: com.arissazheng
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/Secrets.xcconfig
+  Release: Config/Secrets.xcconfig
+packages:
+  GoogleMaps:
+    url: https://github.com/googlemaps/ios-maps-sdk
+    # 11.x requires iOS 17 but google-maps-ios-utils 7.1.2 declares iOS 16, which SPM rejects.
+    exactVersion: 10.15.0
+  GooglePlaces:
+    url: https://github.com/googlemaps/ios-places-sdk
+    from: 11.4.0
+  GoogleMapsUtils:
+    url: https://github.com/googlemaps/google-maps-ios-utils
+    from: 7.1.2
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.55.7
+targets:
+  LetMeKnow:
+    type: application
+    platform: iOS
+    sources:
+      - LetMeKnow
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arissazheng.letmeknow
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: LetMeKnow/Info.plist
+      properties:
+        CFBundleDisplayName: Let Me Know
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSLocationWhenInUseUsageDescription: Let Me Know uses your location to show nearby reports, plan safer routes, and — only if you turn it on — share an anonymous ping that helps map how crowded areas are.
+        GoogleMapsAPIKey: $(GOOGLE_MAPS_API_KEY)
+        SupabaseURL: $(SUPABASE_URL)
+        SupabaseAnonKey: $(SUPABASE_ANON_KEY)
+        ValhallaURL: $(VALHALLA_URL)
+    dependencies:
+      - package: GoogleMaps
+        product: GoogleMaps
+      - package: GooglePlaces
+        product: GooglePlacesSwift
+      - package: GoogleMapsUtils
+        product: GoogleMapsUtils
+      - package: Supabase
+        product: Supabase

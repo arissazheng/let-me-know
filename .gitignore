@@ -1,0 +1,17 @@
+# Secrets — never commit
+Config/Secrets.xcconfig
+supabase/.env
+.env
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Swift packages checkout
+.build/
