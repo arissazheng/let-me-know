@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// F1: sign in with a verified campus email and a one-time code.
+/// F1: sign in with a verified campus email via an emailed link.
 struct SignInView: View {
     @Environment(AuthModel.self) private var auth
     @State private var email = ""
-    @State private var code = ""
-    @State private var codeSent = false
+    @State private var linkSent = false
     @State private var isWorking = false
     @State private var errorMessage: String?
 
@@ -13,32 +12,25 @@ struct SignInView: View {
         VStack(spacing: 24) {
             Spacer()
             VStack(spacing: 8) {
-                Image(systemName: "figure.walk.motion")
+                Image(systemName: linkSent ? "envelope.open.fill" : "figure.walk.motion")
                     .font(.system(size: 56))
                     .foregroundStyle(.tint)
-                Text("Let Me Know")
+                    .contentTransition(.symbolEffect(.replace))
+                Text(linkSent ? "Check your email" : "Let Me Know")
                     .font(.largeTitle.bold())
-                Text("Sign in with your campus email.")
+                Text(linkSent ? "Tap the sign-in link we sent to \(email) on this phone." : "Sign in with your campus email.")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
 
-            VStack(spacing: 12) {
+            if !linkSent {
                 TextField("you@berkeley.edu", text: $email)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .disabled(codeSent)
                     .padding()
                     .glassEffect(.regular, in: .rect(cornerRadius: 16))
-
-                if codeSent {
-                    TextField("Code from your email", text: $code)
-                        .textContentType(.oneTimeCode)
-                        .keyboardType(.numberPad)
-                        .padding()
-                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                }
             }
 
             if let errorMessage {
@@ -49,25 +41,24 @@ struct SignInView: View {
             }
 
             Button {
-                Task { await submit() }
+                Task { await send() }
             } label: {
                 Group {
                     if isWorking {
                         ProgressView()
                     } else {
-                        Text(codeSent ? "Sign In" : "Send Code")
+                        Text(linkSent ? "Resend Link" : "Email Me a Sign-In Link")
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
-            .disabled(isWorking || (codeSent ? code.count < 6 : email.isEmpty))
+            .disabled(isWorking || email.isEmpty)
 
-            if codeSent {
+            if linkSent {
                 Button("Use a different email") {
-                    codeSent = false
-                    code = ""
+                    linkSent = false
                     errorMessage = nil
                 }
                 .font(.footnote)
@@ -75,6 +66,7 @@ struct SignInView: View {
             Spacer()
         }
         .padding(24)
+        .animation(.snappy, value: linkSent)
         .background(
             LinearGradient(
                 colors: [Color(GoogleMapView.populationBlue).opacity(0.25), Color(GoogleMapView.lightYellow).opacity(0.2)],
@@ -85,7 +77,7 @@ struct SignInView: View {
         )
     }
 
-    private func submit() async {
+    private func send() async {
         errorMessage = nil
         guard AuthModel.isCampusEmail(email) else {
             errorMessage = "Use your @\(AppConfig.campusEmailDomain) email."
@@ -94,12 +86,8 @@ struct SignInView: View {
         isWorking = true
         defer { isWorking = false }
         do {
-            if codeSent {
-                try await auth.verify(email: email, code: code)
-            } else {
-                try await auth.sendCode(to: email)
-                codeSent = true
-            }
+            try await auth.sendLink(to: email)
+            linkSent = true
         } catch {
             errorMessage = error.localizedDescription
         }

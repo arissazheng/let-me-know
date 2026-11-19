@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import Supabase
 
-/// Campus-email sign in with a one-time code (F1).
+/// Campus-email sign in with an emailed link (F1).
 @MainActor
 @Observable
 final class AuthModel {
@@ -20,16 +20,17 @@ final class AuthModel {
         email.trimmingCharacters(in: .whitespaces).lowercased().hasSuffix("@" + AppConfig.campusEmailDomain)
     }
 
-    func sendCode(to email: String) async throws {
-        try await supabase.auth.signInWithOTP(email: email.trimmingCharacters(in: .whitespaces).lowercased())
+    /// Emails a sign-in link that opens the app at `AppConfig.signInRedirect`.
+    func sendLink(to email: String) async throws {
+        try await supabase.auth.signInWithOTP(
+            email: email.trimmingCharacters(in: .whitespaces).lowercased(),
+            redirectTo: AppConfig.signInRedirect
+        )
     }
 
-    func verify(email: String, code: String) async throws {
-        _ = try await supabase.auth.verifyOTP(
-            email: email.trimmingCharacters(in: .whitespaces).lowercased(),
-            token: code.trimmingCharacters(in: .whitespaces),
-            type: .email
-        )
+    /// Completes sign-in when the emailed link opens the app.
+    func handle(_ url: URL) async throws {
+        _ = try await supabase.auth.session(from: url)
     }
 
     func signOut() async {

@@ -10,6 +10,8 @@ enum AppConfig {
 
     /// Only verified campus emails can sign in (F1).
     static let campusEmailDomain = "berkeley.edu"
+    /// Must also be listed under Supabase → Authentication → URL Configuration → Redirect URLs.
+    static let signInRedirect = URL(string: "letmeknow://login-callback")!
 
     private static func value(_ key: String) -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String, !value.isEmpty else {

@@ -40,6 +40,10 @@ targets:
       properties:
         CFBundleDisplayName: Let Me Know
         UILaunchScreen: {}
+        # Sign-in emails link back to letmeknow://login-callback
+        CFBundleURLTypes:
+          - CFBundleURLName: com.arissazheng.letmeknow
+            CFBundleURLSchemes: [letmeknow]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSLocationWhenInUseUsageDescription: Let Me Know uses your location to show nearby reports, plan safer routes, and — only if you turn it on — share an anonymous ping that helps map how crowded areas are.
         GoogleMapsAPIKey: $(GOOGLE_MAPS_API_KEY)
