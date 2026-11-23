@@ -22,7 +22,7 @@ struct GoogleMapView: UIViewRepresentable {
     var onSelectRoute: (SafeRoute.ID) -> Void
 
     static let berkeley = CLLocationCoordinate2D(latitude: 37.8690, longitude: -122.2595)
-    static let lightYellow = UIColor(red: 1.0, green: 0.84, blue: 0.04, alpha: 1)
+    static let lightYellow = UIColor(red: 1.0, green: 0.80, blue: 0.0, alpha: 1)
     static let populationBlue = UIColor(red: 0.04, green: 0.52, blue: 1.0, alpha: 1)
     static let safeGreen = UIColor(red: 0.20, green: 0.78, blue: 0.35, alpha: 1)
 
@@ -64,7 +64,11 @@ struct GoogleMapView: UIViewRepresentable {
         var parent: GoogleMapView
         var lastFocusToken = 0
         let lightLayer = Coordinator.glowLayer(color: GoogleMapView.lightYellow, radius: 40)
-        let populationLayer = Coordinator.glowLayer(color: GoogleMapView.populationBlue, radius: 50)
+        let populationLayer: GMUHeatmapTileLayer = {
+            let layer = Coordinator.glowLayer(color: GoogleMapView.populationBlue, radius: 50)
+            layer.zIndex = 1  // draw students above streetlights
+            return layer
+        }()
 
         private var reportMarkers: [UUID: GMSMarker] = [:]
         private var routeLines: [GMSPolyline] = []
@@ -79,10 +83,14 @@ struct GoogleMapView: UIViewRepresentable {
         static func glowLayer(color: UIColor, radius: UInt) -> GMUHeatmapTileLayer {
             let layer = GMUHeatmapTileLayer()
             layer.radius = radius
-            layer.opacity = 0.75
+            layer.opacity = 0.9
+            // Normalize against street-level zooms. The default (zoom 5–10) measures against
+            // citywide clusters, which leaves single blocks too faint to see at zoom 15+.
+            layer.minimumZoomIntensity = 15
+            layer.maximumZoomIntensity = 17
             layer.gradient = GMUGradient(
-                colors: [color.withAlphaComponent(0.35), color],
-                startPoints: [0.08, 1.0],
+                colors: [color.withAlphaComponent(0.55), color.withAlphaComponent(0.85), color],
+                startPoints: [0.02, 0.2, 0.6],
                 colorMapSize: 256
             )
             return layer
