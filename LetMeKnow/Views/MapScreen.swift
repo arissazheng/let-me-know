@@ -50,7 +50,7 @@ struct MapScreen: View {
                 destination: destination?.coordinate,
                 focus: focus,
                 focusToken: focusToken,
-                bottomPadding: destination == nil ? 110 : 330,
+                bottomPadding: destination == nil ? 110 : 390,
                 onCameraIdle: { cameraCenter = $0 },
                 onSelectReport: { selectedReport = $0 },
                 onSelectRoute: { selectedRouteID = $0 }
@@ -188,7 +188,11 @@ struct MapScreen: View {
                     .padding(20)
                     .glassEffect(.regular, in: .capsule)
             } else if !routes.isEmpty {
-                RouteCard(destinationName: destination.name, routes: routes, selectedID: $selectedRouteID, onClose: endRoute)
+                // Reporting stays available mid-route; the student is most likely to see something while walking.
+                VStack(alignment: .trailing, spacing: 10) {
+                    reportButton
+                    RouteCard(destinationName: destination.name, routes: routes, selectedID: $selectedRouteID, onClose: endRoute)
+                }
             } else {
                 Button("Close", systemImage: "xmark", action: endRoute)
                     .buttonStyle(.glass)
@@ -205,16 +209,7 @@ struct MapScreen: View {
 
                     Spacer()
 
-                    Button {
-                        isPlacingReport = true
-                    } label: {
-                        Label("Report", systemImage: "exclamationmark.bubble.fill")
-                            .font(.headline)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 6)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .tint(.red)
+                    reportButton
 
                     Spacer()
 
@@ -230,6 +225,19 @@ struct MapScreen: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private var reportButton: some View {
+        Button {
+            isPlacingReport = true
+        } label: {
+            Label("Report", systemImage: "exclamationmark.bubble.fill")
+                .font(.headline)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+        }
+        .buttonStyle(.glassProminent)
+        .tint(.red)
     }
 
     @ViewBuilder

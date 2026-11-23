@@ -96,6 +96,12 @@ export function MapScreen({ email }: { email?: string }) {
 
   const message = reportsError ?? routeError
 
+  const reportButton = (
+    <button className="btn-prominent red" style={{ display: 'flex', gap: 8, alignItems: 'center' }} onClick={() => setPlacing(true)}>
+      <ReportBubble /> Report
+    </button>
+  )
+
   return (
     <div className="map-screen">
       <Map
@@ -142,7 +148,11 @@ export function MapScreen({ email }: { email?: string }) {
           routing ? (
             <div className="place-panel glass">Finding a safer route…</div>
           ) : routes.length ? (
-            <RouteCard destinationName={destination.name} routes={routes} selectedId={selectedRouteId} onSelect={setSelectedRouteId} onClose={endRoute} />
+            // Reporting stays available mid-route; the student is most likely to see something while walking.
+            <>
+              <div style={{ alignSelf: 'flex-end' }}>{reportButton}</div>
+              <RouteCard destinationName={destination.name} routes={routes} selectedId={selectedRouteId} onSelect={setSelectedRouteId} onClose={endRoute} />
+            </>
           ) : (
             <button className="btn-glass glass" style={{ alignSelf: 'center' }} onClick={endRoute}>Close</button>
           )
@@ -158,9 +168,7 @@ export function MapScreen({ email }: { email?: string }) {
               <button className="circle glass glass-interactive" onClick={() => setSettingsOpen(true)} aria-label="Settings">
                 <Gear />
               </button>
-              <button className="btn-prominent red" style={{ display: 'flex', gap: 8, alignItems: 'center' }} onClick={() => setPlacing(true)}>
-                <ReportBubble /> Report
-              </button>
+              {reportButton}
               <button className="circle glass glass-interactive" onClick={() => setFocusToken((t) => t + 1)} aria-label="My location">
                 <Locate />
               </button>

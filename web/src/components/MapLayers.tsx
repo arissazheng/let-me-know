@@ -135,7 +135,7 @@ export function RouteLines({
     if (!map || !routes[0]) return
     const bounds = new google.maps.LatLngBounds()
     routes[0].path.forEach((p) => bounds.extend(p))
-    map.fitBounds(bounds, { top: 90, bottom: 340, left: 40, right: 40 })
+    map.fitBounds(bounds, { top: 90, bottom: 400, left: 40, right: 40 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, firstId])
 
