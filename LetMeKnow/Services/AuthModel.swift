@@ -28,9 +28,17 @@ final class AuthModel {
         )
     }
 
+    /// Set when an emailed link opens the app but can't complete sign-in.
+    var linkError: String?
+
     /// Completes sign-in when the emailed link opens the app.
-    func handle(_ url: URL) async throws {
-        _ = try await supabase.auth.session(from: url)
+    func handle(_ url: URL) async {
+        do {
+            _ = try await supabase.auth.session(from: url)
+            linkError = nil
+        } catch {
+            linkError = "That sign-in link didn't work (\(error.localizedDescription)). Send a new one."
+        }
     }
 
     func signOut() async {

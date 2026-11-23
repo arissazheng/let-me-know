@@ -23,7 +23,7 @@ struct LetMeKnowApp: App {
             .environment(auth)
             .task { await auth.observe() }
             .onOpenURL { url in
-                Task { try? await auth.handle(url) }
+                Task { await auth.handle(url) }
             }
         }
     }

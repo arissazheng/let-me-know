@@ -33,7 +33,7 @@ struct SignInView: View {
                     .glassEffect(.regular, in: .rect(cornerRadius: 16))
             }
 
-            if let errorMessage {
+            if let errorMessage = errorMessage ?? auth.linkError {
                 Text(errorMessage)
                     .font(.footnote)
                     .foregroundStyle(.red)
