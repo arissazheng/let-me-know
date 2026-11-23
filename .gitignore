@@ -15,3 +15,9 @@ xcuserdata/
 
 # Swift packages checkout
 .build/
+
+# Web app
+web/node_modules/
+web/dist/
+web/.env.local
+.vercel/

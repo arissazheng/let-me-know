@@ -1,0 +1,28 @@
+{
+  "name": "let-me-know-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.4.1",
+    "@deck.gl/core": "^9.4.1",
+    "@deck.gl/google-maps": "^9.4.1",
+    "@supabase/supabase-js": "^2.119.2",
+    "@vis.gl/react-google-maps": "^1.10.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/google.maps": "^3.67.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.6"
+  }
+}
