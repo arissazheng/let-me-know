@@ -1,7 +1,7 @@
 import { HeatmapLayer } from '@deck.gl/aggregation-layers'
 import { GoogleMapsOverlay } from '@deck.gl/google-maps'
 import { Marker, Polyline, useMap } from '@vis.gl/react-google-maps'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { colors } from '../lib/config'
 import type { PopulationCell, Report } from '../lib/data'
 import type { LatLng } from '../lib/geo'
@@ -9,8 +9,8 @@ import type { SafeRoute } from '../lib/routing'
 import { streetlights, type Streetlight } from '../lib/streetlights'
 
 /** Opacity rises with density: sparse areas stay see-through, only dense clusters are fully saturated. */
-function glowRange([r, g, b]: readonly [number, number, number]): [number, number, number, number][] {
-  return [20, 60, 105, 150, 200, 245].map((a) => [r, g, b, a])
+function glowRange([r, g, b]: readonly [number, number, number], alphas = [20, 60, 105, 150, 200, 245]) {
+  return alphas.map((a) => [r, g, b, a] as [number, number, number, number])
 }
 
 /** Yellow streetlight glow and blue student-population glow, drawn with deck.gl over the Google map. */
@@ -26,13 +26,41 @@ export function GlowLayers({
   const map = useMap()
   const overlay = useRef<GoogleMapsOverlay | null>(null)
 
+  const [ready, setReady] = useState(false)
+
   useEffect(() => {
     if (!map) return
-    overlay.current = new GoogleMapsOverlay({ interleaved: false })
-    overlay.current.setMap(map)
+    const instance = new GoogleMapsOverlay({ interleaved: false })
+    let attached = false
+    // Google Maps adds overlays asynchronously, so an overlay detached right after attaching
+    // (React StrictMode's mount → unmount → mount) still gets onAdd with no map and throws.
+    // Deferring by a tick means that throwaway first mount never touches the map. We also wait
+    // for the rendering type, or deck.gl leaves its own 'renderingtype_changed' listener behind.
+    const attach = () => {
+      attached = true
+      instance.setMap(map)
+      overlay.current = instance
+      setReady(true)
+    }
+    let listener: google.maps.MapsEventListener | null = null
+    const timer = setTimeout(() => {
+      if (map.getRenderingType() === google.maps.RenderingType.UNINITIALIZED) {
+        listener = map.addListener('renderingtype_changed', () => {
+          listener?.remove()
+          listener = null
+          attach()
+        })
+      } else {
+        attach()
+      }
+    }, 0)
     return () => {
-      overlay.current?.setMap(null)
+      clearTimeout(timer)
+      listener?.remove()
+      if (attached) instance.setMap(null)
+      instance.finalize()
       overlay.current = null
+      setReady(false)
     }
   }, [map])
 
@@ -46,7 +74,8 @@ export function GlowLayers({
         getWeight: (d) => Math.max(d.wattage, 20) / 50,
         radiusPixels: 45,
         threshold: 0.02,
-        colorRange: glowRange(colors.lightYellow),
+        // Lamps are spread evenly, so start the yellow ramp higher than the student glow's.
+        colorRange: glowRange(colors.lightYellow, [50, 95, 140, 180, 215, 245]),
       }),
       new HeatmapLayer<PopulationCell>({
         id: 'population',
@@ -64,7 +93,7 @@ export function GlowLayers({
 
   useEffect(() => {
     overlay.current?.setProps({ layers })
-  }, [layers, map])
+  }, [layers, ready])
 
   return null
 }
