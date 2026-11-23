@@ -18,10 +18,13 @@ export function GlowLayers({
   cells,
   showLights,
   showPopulation,
+  dimmed = false,
 }: {
   cells: PopulationCell[]
   showLights: boolean
   showPopulation: boolean
+  /** Fainter glows while navigating, so the route stays readable at street level. */
+  dimmed?: boolean
 }) {
   const map = useMap()
   const overlay = useRef<GoogleMapsOverlay | null>(null)
@@ -70,6 +73,7 @@ export function GlowLayers({
         id: 'streetlights',
         data: streetlights,
         visible: showLights,
+        opacity: dimmed ? 0.35 : 1,
         getPosition: (d) => d.position,
         getWeight: (d) => Math.max(d.wattage, 20) / 50,
         radiusPixels: 45,
@@ -81,6 +85,7 @@ export function GlowLayers({
         id: 'population',
         data: cells,
         visible: showPopulation,
+        opacity: dimmed ? 0.5 : 1,
         getPosition: (d) => [d.lng, d.lat],
         getWeight: (d) => d.weight,
         radiusPixels: 50,
@@ -88,7 +93,7 @@ export function GlowLayers({
         colorRange: glowRange(colors.populationBlue),
       }),
     ],
-    [cells, showLights, showPopulation],
+    [cells, showLights, showPopulation, dimmed],
   )
 
   useEffect(() => {
@@ -120,11 +125,14 @@ export function RouteLines({
   routes,
   selectedId,
   destination,
+  fit = true,
   onSelect,
 }: {
   routes: SafeRoute[]
   selectedId: string | null
   destination: LatLng | null
+  /** Fit the camera to newly planned routes (off while navigating, when the camera follows the student). */
+  fit?: boolean
   onSelect: (id: string) => void
 }) {
   const map = useMap()
@@ -132,7 +140,7 @@ export function RouteLines({
 
   // Fit the camera to a newly planned route.
   useEffect(() => {
-    if (!map || !routes[0]) return
+    if (!map || !routes[0] || !fit) return
     const bounds = new google.maps.LatLngBounds()
     routes[0].path.forEach((p) => bounds.extend(p))
     map.fitBounds(bounds, { top: 90, bottom: 400, left: 40, right: 40 })
@@ -177,6 +185,20 @@ export function UserDot({ location }: { location: LatLng | null }) {
       }}
     />
   )
+}
+
+/** While navigating, keeps the camera on the student at street level. */
+export function FollowUser({ location }: { location: LatLng | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!map) return
+    map.setZoom(18)
+  }, [map])
+  // Re-center directly: rapid fixes would keep interrupting panTo's animation.
+  useEffect(() => {
+    if (map && location) map.setCenter(location)
+  }, [map, location])
+  return null
 }
 
 /** Pans the map when `token` changes. */

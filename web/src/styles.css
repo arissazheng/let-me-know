@@ -186,3 +186,18 @@ input, textarea { font: inherit; color: inherit; }
 .signin input { border-radius: 16px; padding: 16px; outline: none; border: 1px solid var(--glass-rim); font-size: 17px; width: 100%; }
 .signin .error { color: var(--red); font-size: 14px; }
 .link { color: var(--tint); font-size: 14px; }
+
+/* ── Turn-by-turn navigation ───────────────── */
+.btn-prominent.green { background: var(--green); box-shadow: 0 6px 20px rgba(52, 199, 89, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.turn-banner {
+  display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 24px; color: #fff;
+  background: rgba(52, 199, 89, 0.88); border-color: rgba(255, 255, 255, 0.35);
+}
+.turn-icon { width: 44px; display: grid; place-items: center; flex: none; }
+.turn-distance { font-size: 24px; font-weight: 700; }
+.turn-text { font-size: 15px; font-weight: 500; }
+.nav-bar { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 999px; }
+.nav-eta { flex: 1; text-align: center; }
+.nav-eta .mins { font-size: 22px; font-weight: 700; color: var(--green); }
+.nav-eta .sub { font-size: 14px; color: var(--secondary-label); }
+.report-circle { background: var(--red); color: #fff; box-shadow: 0 4px 14px rgba(255, 59, 48, 0.35); }

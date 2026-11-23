@@ -15,6 +15,7 @@
 		3E8DB48F758C937796A49CCA /* SearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186EBF3668786E88CE438AB0 /* SearchSheet.swift */; };
 		4463E1E607829FF8C8BD719D /* Streetlights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A803806738796B8DEEA94F4 /* Streetlights.swift */; };
 		5AD0F07ACF4F825BC30A7F1B /* MapScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F595ED27B5C63239BD312FAA /* MapScreen.swift */; };
+		5C3A575A924317764F30DB93 /* Navigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A8010BADA625C69F2F9C0FC /* Navigator.swift */; };
 		6234982098D6DC040B6997A9 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 9483286E268A0D0CF6F30E8B /* GoogleMaps */; };
 		6C2DE6BC042D557E5094562E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF84FADD400B90E5624FB80 /* SettingsView.swift */; };
 		739B7568F8B5133E6FF1C907 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B63426FE1DE2F8BB565874 /* LocationManager.swift */; };
@@ -26,13 +27,16 @@
 		9D500F4BEEFFA681668612C3 /* LetMeKnowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF214D4616DF91F54FA762C4 /* LetMeKnowApp.swift */; };
 		9D63C2E0DEC29D0AC91C1B13 /* ReportsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71B22F11486F2E9C2405DD3 /* ReportsStore.swift */; };
 		A2682BD7CA1F419281D94955 /* GoogleMapsUtils in Frameworks */ = {isa = PBXBuildFile; productRef = 8C0FCE385465EB6B6CD4D54C /* GoogleMapsUtils */; };
+		A85DBB00593AFC1408755DAF /* NavigationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 074A6EC341E0AB1D6FAB9BD1 /* NavigationViews.swift */; };
 		D43F03BEB1A3FFDE1C151826 /* GoogleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D856B517BE6C0432CDB349 /* GoogleMapView.swift */; };
 		F2116FF8D99061432B876266 /* RouteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9630D420F46EFC6D56E57BE5 /* RouteService.swift */; };
 		F9BF1DD708CA2383929A040F /* RoutePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9864C397695C3FA53F921840 /* RoutePreferences.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		074A6EC341E0AB1D6FAB9BD1 /* NavigationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationViews.swift; sourceTree = "<group>"; };
 		186EBF3668786E88CE438AB0 /* SearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchSheet.swift; sourceTree = "<group>"; };
+		1A8010BADA625C69F2F9C0FC /* Navigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Navigator.swift; sourceTree = "<group>"; };
 		27EA1302C1855AD0FE8BD11D /* PopulationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopulationStore.swift; sourceTree = "<group>"; };
 		2F7338877124B5E77DF9D9F5 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		45195546160F37760D480143 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
@@ -75,6 +79,7 @@
 			children = (
 				5F14438C4C21F718C9DF0E4C /* AuthModel.swift */,
 				85B63426FE1DE2F8BB565874 /* LocationManager.swift */,
+				1A8010BADA625C69F2F9C0FC /* Navigator.swift */,
 				27EA1302C1855AD0FE8BD11D /* PopulationStore.swift */,
 				C71B22F11486F2E9C2405DD3 /* ReportsStore.swift */,
 				9864C397695C3FA53F921840 /* RoutePreferences.swift */,
@@ -144,6 +149,7 @@
 			children = (
 				87D856B517BE6C0432CDB349 /* GoogleMapView.swift */,
 				F595ED27B5C63239BD312FAA /* MapScreen.swift */,
+				074A6EC341E0AB1D6FAB9BD1 /* NavigationViews.swift */,
 				7122CA63D7EC1DA7CC48DB21 /* ReportSheets.swift */,
 				96ED4E03D89E398415A05B99 /* RouteCard.swift */,
 				186EBF3668786E88CE438AB0 /* SearchSheet.swift */,
@@ -245,6 +251,8 @@
 				9D500F4BEEFFA681668612C3 /* LetMeKnowApp.swift in Sources */,
 				739B7568F8B5133E6FF1C907 /* LocationManager.swift in Sources */,
 				5AD0F07ACF4F825BC30A7F1B /* MapScreen.swift in Sources */,
+				A85DBB00593AFC1408755DAF /* NavigationViews.swift in Sources */,
+				5C3A575A924317764F30DB93 /* Navigator.swift in Sources */,
 				7A4D51AE05FD35475281556F /* PopulationStore.swift in Sources */,
 				36C49114390AC83EC3824C9B /* Report.swift in Sources */,
 				09F6DE881A4CF1E10A37540A /* ReportSheets.swift in Sources */,

@@ -14,6 +14,8 @@ struct SafeRoute: Identifiable, Equatable {
     /// Live reports within 50 m of the route.
     let nearbyReports: Int
     let score: Double
+    /// Turn-by-turn steps, in order.
+    let maneuvers: [Maneuver]
 
     static func == (lhs: SafeRoute, rhs: SafeRoute) -> Bool { lhs.id == rhs.id }
 
@@ -22,6 +24,31 @@ struct SafeRoute: Identifiable, Equatable {
         let target = CLLocation(latitude: point.latitude, longitude: point.longitude)
         return RouteService.densify(path).contains {
             CLLocation(latitude: $0.latitude, longitude: $0.longitude).distance(from: target) <= meters
+        }
+    }
+}
+
+/// One turn-by-turn step from Valhalla.
+struct Maneuver {
+    /// Valhalla maneuver type (e.g. 10 = right, 15 = left, 4–6 = arrive).
+    let type: Int
+    let instruction: String
+    /// Index into the route path where this step begins.
+    let beginIndex: Int
+
+    var isArrival: Bool { (4...6).contains(type) }
+
+    /// SF Symbol for the turn arrow.
+    var symbol: String {
+        switch type {
+        case 4, 5, 6: "mappin.circle.fill"
+        case 9, 20, 23: "arrow.up.right"
+        case 21, 24: "arrow.up.left"
+        case 10, 11: "arrow.turn.up.right"
+        case 12, 13: "arrow.uturn.down"
+        case 14, 15: "arrow.turn.up.left"
+        case 16: "arrow.up.left"
+        default: "arrow.up"
         }
     }
 }
@@ -79,7 +106,8 @@ enum RouteService {
 
             return SafeRoute(
                 path: trip.path, meters: trip.meters, seconds: trip.seconds,
-                litFraction: lit, crowdLevel: crowd, nearbyReports: nearby, score: score
+                litFraction: lit, crowdLevel: crowd, nearbyReports: nearby, score: score,
+                maneuvers: trip.maneuvers
             )
         }
         .sorted { $0.score < $1.score }
@@ -91,6 +119,7 @@ enum RouteService {
         let path: [CLLocationCoordinate2D]
         let meters: Double
         let seconds: Double
+        let maneuvers: [Maneuver]
     }
 
     private static func request(
@@ -130,8 +159,14 @@ enum RouteService {
               let seconds = summary["time"] as? Double,
               let legs = trip["legs"] as? [[String: Any]]
         else { return nil }
+        // Two locations → a single leg, so maneuver shape indices index straight into `path`.
         let path = legs.compactMap { $0["shape"] as? String }.flatMap(decodePolyline6)
-        return ValhallaTrip(path: path, meters: km * 1000, seconds: seconds)
+        let maneuvers = (legs.first?["maneuvers"] as? [[String: Any]] ?? []).compactMap { m -> Maneuver? in
+            guard let type = m["type"] as? Int, let text = m["instruction"] as? String,
+                  let begin = m["begin_shape_index"] as? Int else { return nil }
+            return Maneuver(type: type, instruction: text, beginIndex: min(begin, max(path.count - 1, 0)))
+        }
+        return ValhallaTrip(path: path, meters: km * 1000, seconds: seconds, maneuvers: maneuvers)
     }
 
     /// Closed lon/lat ring, as Valhalla's exclude_polygons expects.

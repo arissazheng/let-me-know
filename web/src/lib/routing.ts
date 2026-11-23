@@ -23,6 +23,30 @@ export type SafeRoute = {
   /** Live reports within 50 m of the route. */
   nearbyReports: number
   score: number
+  /** Turn-by-turn steps, in order. */
+  maneuvers: Maneuver[]
+}
+
+/** One turn-by-turn step from Valhalla. */
+export type Maneuver = {
+  /** Valhalla maneuver type (e.g. 10 = right, 15 = left, 4–6 = arrive). */
+  type: number
+  instruction: string
+  /** Index into the route path where this step begins. */
+  beginIndex: number
+}
+
+/** Arrow rotation in degrees for a maneuver type (null = destination pin). */
+export function turnAngle(type: number): number | null {
+  if (type >= 4 && type <= 6) return null
+  if ([9, 20, 23].includes(type)) return 45
+  if (type === 10) return 90
+  if (type === 11) return 135
+  if (type === 12 || type === 13) return 180
+  if (type === 14) return -135
+  if (type === 15) return -90
+  if ([16, 21, 24].includes(type)) return -45
+  return 0
 }
 
 /** Whether `point` lies within `meters` of `route`. */
@@ -76,16 +100,17 @@ export async function safeRoutes(
         crowdLevel: crowd,
         nearbyReports: nearby,
         score,
+        maneuvers: trip.maneuvers,
       }
     })
     .sort((a, b) => a.score - b.score)
 }
 
-type Trip = { path: LatLng[]; meters: number; seconds: number }
+type Trip = { path: LatLng[]; meters: number; seconds: number; maneuvers: Maneuver[] }
 
 type ValhallaTrip = {
   summary: { length: number; time: number }
-  legs: { shape: string }[]
+  legs: { shape: string; maneuvers?: { type: number; instruction: string; begin_shape_index: number }[] }[]
 }
 
 async function request(origin: LatLng, destination: LatLng, avoid: Report[], preferLit: boolean): Promise<Trip[]> {
@@ -106,11 +131,20 @@ async function request(origin: LatLng, destination: LatLng, avoid: Report[], pre
   })
   const json = (await response.json()) as { trip?: ValhallaTrip; alternates?: { trip: ValhallaTrip }[]; error?: string }
   if (!json.trip) throw new Error(`No walking route found. ${json.error ?? ''}`.trim())
-  return [json.trip, ...(json.alternates ?? []).map((a) => a.trip)].map((trip) => ({
-    path: trip.legs.flatMap((leg) => decodePolyline6(leg.shape)),
-    meters: trip.summary.length * 1000,
-    seconds: trip.summary.time,
-  }))
+  return [json.trip, ...(json.alternates ?? []).map((a) => a.trip)].map((trip) => {
+    // Two locations → a single leg, so maneuver shape indices index straight into `path`.
+    const path = trip.legs.flatMap((leg) => decodePolyline6(leg.shape))
+    return {
+      path,
+      meters: trip.summary.length * 1000,
+      seconds: trip.summary.time,
+      maneuvers: (trip.legs[0]?.maneuvers ?? []).map((m) => ({
+        type: m.type,
+        instruction: m.instruction,
+        beginIndex: Math.min(m.begin_shape_index, Math.max(path.length - 1, 0)),
+      })),
+    }
+  })
 }
 
 /** Closed lon/lat ring, as Valhalla's exclude_polygons expects. */

@@ -5,6 +5,7 @@ struct RouteCard: View {
     var destinationName: String
     var routes: [SafeRoute]
     @Binding var selectedID: SafeRoute.ID?
+    var onStart: () -> Void
     var onClose: () -> Void
 
     var body: some View {
@@ -33,6 +34,16 @@ struct RouteCard: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            Button(action: onStart) {
+                Label("Start", systemImage: "location.north.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.glassProminent)
+            .tint(.green)
+            .disabled(selectedID == nil)
         }
         .padding(16)
         .glassEffect(.regular, in: .rect(cornerRadius: 28))

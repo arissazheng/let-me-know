@@ -6,6 +6,7 @@ struct MapScreen: View {
     @State private var reportsStore = ReportsStore()
     @State private var population = PopulationStore()
     @State private var location = LocationManager()
+    @State private var navigator = Navigator()
 
     @AppStorage(PreferenceKey.avoidIncidents) private var avoidIncidents = true
     @AppStorage(PreferenceKey.avoidPoorLighting) private var avoidPoorLighting = true
@@ -45,12 +46,13 @@ struct MapScreen: View {
                 showReports: showReports,
                 showLightGlow: showLightGlow,
                 showPopulationGlow: showPopulationGlow,
-                routes: routes,
-                selectedRouteID: selectedRouteID,
+                routes: navigator.route.map { [$0] } ?? routes,
+                selectedRouteID: navigator.route?.id ?? selectedRouteID,
                 destination: destination?.coordinate,
                 focus: focus,
                 focusToken: focusToken,
-                bottomPadding: destination == nil ? 110 : 390,
+                follow: navigator.isActive ? location.coordinate.map { ($0, location.course, location.updateCount) } : nil,
+                bottomPadding: navigator.isActive ? 120 : destination == nil ? 110 : 390,
                 onCameraIdle: { cameraCenter = $0 },
                 onSelectReport: { selectedReport = $0 },
                 onSelectRoute: { selectedRouteID = $0 }
@@ -67,7 +69,11 @@ struct MapScreen: View {
             }
 
             VStack(spacing: 10) {
-                topBar
+                if navigator.isActive {
+                    TurnBanner(maneuver: navigator.nextManeuver, meters: navigator.metersToManeuver, hasArrived: navigator.hasArrived)
+                } else {
+                    topBar
+                }
                 if let banner {
                     Label(banner, systemImage: "arrow.triangle.turn.up.right.diamond.fill")
                         .font(.subheadline.weight(.semibold))
@@ -112,6 +118,15 @@ struct MapScreen: View {
         .task { await population.keepFresh() }
         .task(id: shareLocation) {
             if shareLocation { await population.sharePings(from: location) }
+        }
+        .onChange(of: location.updateCount) {
+            guard navigator.isActive, let here = location.coordinate else { return }
+            if navigator.update(location: here) {
+                Task {
+                    await planRoute()
+                    showBanner("Off route. Found a new safer route.")
+                }
+            }
         }
         .onChange(of: reportsStore.latestLiveReport) { _, report in
             guard let report else { return }
@@ -182,6 +197,14 @@ struct MapScreen: View {
             }
             .padding(16)
             .glassEffect(.regular, in: .rect(cornerRadius: 28))
+        } else if navigator.isActive {
+            NavigationBar(
+                remainingSeconds: navigator.remainingSeconds,
+                remainingMeters: navigator.remainingMeters,
+                isMuted: $navigator.isMuted,
+                onReport: { isPlacingReport = true },
+                onEnd: endRoute
+            )
         } else if let destination {
             if isRouting {
                 ProgressView("Finding a safer route…")
@@ -191,7 +214,13 @@ struct MapScreen: View {
                 // Reporting stays available mid-route; the student is most likely to see something while walking.
                 VStack(alignment: .trailing, spacing: 10) {
                     reportButton
-                    RouteCard(destinationName: destination.name, routes: routes, selectedID: $selectedRouteID, onClose: endRoute)
+                    RouteCard(
+                        destinationName: destination.name,
+                        routes: routes,
+                        selectedID: $selectedRouteID,
+                        onStart: startNavigation,
+                        onClose: endRoute
+                    )
                 }
             } else {
                 Button("Close", systemImage: "xmark", action: endRoute)
@@ -281,6 +310,8 @@ struct MapScreen: View {
                 preferences: preferences
             )
             selectedRouteID = routes.first?.id
+            // Mid-walk re-plans (new report or off route) continue guidance on the new route.
+            if let best = routes.first { navigator.replace(with: best) }
         } catch {
             routes = []
             routeError = error.localizedDescription
@@ -290,18 +321,30 @@ struct MapScreen: View {
     /// Routes self-correct when a new report lands near the route being shown.
     private func rerouteIfNeeded(for report: Report) {
         guard destination != nil,
-              let current = routes.first(where: { $0.id == selectedRouteID }),
+              let current = navigator.route ?? routes.first(where: { $0.id == selectedRouteID }),
               current.passes(near: report.coordinate, within: 75)
         else { return }
         Task {
             await planRoute()
-            banner = "New report near your route. Route updated."
-            try? await Task.sleep(for: .seconds(5))
-            banner = nil
+            showBanner("New report near your route. Route updated.")
         }
     }
 
+    private func showBanner(_ text: String) {
+        banner = text
+        Task {
+            try? await Task.sleep(for: .seconds(5))
+            if banner == text { banner = nil }
+        }
+    }
+
+    private func startNavigation() {
+        guard let route = routes.first(where: { $0.id == selectedRouteID }) else { return }
+        navigator.start(route)
+    }
+
     private func endRoute() {
+        navigator.stop()
         destination = nil
         routes = []
         selectedRouteID = nil

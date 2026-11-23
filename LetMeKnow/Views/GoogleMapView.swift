@@ -16,6 +16,8 @@ struct GoogleMapView: UIViewRepresentable {
     /// Bump to move the camera to `focus`.
     var focus: CLLocationCoordinate2D?
     var focusToken: Int
+    /// While navigating: keep the camera on the student, pointed along their direction of travel.
+    var follow: (coordinate: CLLocationCoordinate2D, bearing: Double?, token: Int)?
     var bottomPadding: CGFloat
     var onCameraIdle: (CLLocationCoordinate2D) -> Void
     var onSelectReport: (Report) -> Void
@@ -58,11 +60,29 @@ struct GoogleMapView: UIViewRepresentable {
             coordinator.lastFocusToken = focusToken
             map.animate(toLocation: focus)
         }
+
+        if let follow {
+            if follow.token != coordinator.lastFollowToken {
+                coordinator.lastFollowToken = follow.token
+                coordinator.isFollowing = true
+                map.animate(to: GMSCameraPosition(
+                    target: follow.coordinate,
+                    zoom: 18,
+                    bearing: follow.bearing ?? map.camera.bearing,
+                    viewingAngle: 45
+                ))
+            }
+        } else if coordinator.isFollowing {
+            coordinator.isFollowing = false
+            map.animate(to: GMSCameraPosition(target: map.camera.target, zoom: 16, bearing: 0, viewingAngle: 0))
+        }
     }
 
     final class Coordinator: NSObject, GMSMapViewDelegate {
         var parent: GoogleMapView
         var lastFocusToken = 0
+        var lastFollowToken = -1
+        var isFollowing = false
         let lightLayer = Coordinator.glowLayer(color: GoogleMapView.lightYellow, radius: 50)
         let populationLayer: GMUHeatmapTileLayer = {
             let layer = Coordinator.glowLayer(color: GoogleMapView.populationBlue, radius: 50)
@@ -164,7 +184,7 @@ struct GoogleMapView: UIViewRepresentable {
                 destinationMarker = marker
             }
 
-            if isNewRouteSet, let first = routes.first {
+            if isNewRouteSet, !isFollowing, let first = routes.first {
                 let bounds = first.path.reduce(GMSCoordinateBounds()) { $0.includingCoordinate($1) }
                 map.animate(with: GMSCameraUpdate.fit(bounds, withPadding: 60))
             }

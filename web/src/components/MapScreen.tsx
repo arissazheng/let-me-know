@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import { BERKELEY } from '../lib/config'
 import { submitReport, useLocation, usePopulation, useReports, type Report } from '../lib/data'
 import type { LatLng } from '../lib/geo'
+import { useNavigator } from '../lib/navigation'
 import { usePref } from '../lib/prefs'
 import { passesNear, safeRoutes, type SafeRoute } from '../lib/routing'
 import { supabase } from '../lib/supabase'
 import { Check, Filter, Gear, Locate, Pin, ReportBubble, Search } from './Icons'
-import { FocusOn, GlowLayers, ReportPins, RouteLines, UserDot } from './MapLayers'
+import { FocusOn, FollowUser, GlowLayers, ReportPins, RouteLines, UserDot } from './MapLayers'
+import { NavigationBar, TurnBanner } from './Navigation'
 import { RouteCard } from './RouteCard'
 import { NewReportSheet, ReportDetail, SearchSheet, SettingsSheet, type Destination } from './Sheets'
 
@@ -40,6 +42,8 @@ export function MapScreen({ email }: { email?: string }) {
   const [routing, setRouting] = useState(false)
   const [routeError, setRouteError] = useState<string | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
+  const navigator = useNavigator()
+  const nav = navigator.state
 
   const prefs = {
     avoidIncidents: avoidIncidents[0],
@@ -59,6 +63,8 @@ export function MapScreen({ email }: { email?: string }) {
       const planned = await safeRoutes(location, to.location, reports, crowdLevel, prefs)
       setRoutes(planned)
       setSelectedRouteId(planned[0]?.id ?? null)
+      // Mid-walk re-plans (new report or off route) continue guidance on the new route.
+      if (nav && planned[0]) navigator.replace(planned[0])
     } catch (e) {
       setRoutes([])
       setRouteError((e as Error).message)
@@ -72,14 +78,28 @@ export function MapScreen({ email }: { email?: string }) {
   useEffect(() => {
     if (!latestLive || latestLive.id === lastHandled.current) return
     lastHandled.current = latestLive.id
-    const current = routes.find((r) => r.id === selectedRouteId)
+    const current = nav?.route ?? routes.find((r) => r.id === selectedRouteId)
     if (!destination || !current || !passesNear(current, latestLive, 75)) return
-    planRoute().then(() => {
-      setBanner('New report near your route. Route updated.')
-      setTimeout(() => setBanner(null), 5000)
-    })
+    planRoute().then(() => showBanner('New report near your route. Route updated.'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latestLive])
+
+  // Turn-by-turn progress on every location fix; re-plan if the student walks off the route.
+  useEffect(() => {
+    if (!nav || !location) return
+    if (navigator.update(location)) planRoute().then(() => showBanner('Off route. Found a new safer route.'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location])
+
+  function showBanner(text: string) {
+    setBanner(text)
+    setTimeout(() => setBanner((current) => (current === text ? null : current)), 5000)
+  }
+
+  function startNavigation() {
+    const route = routes.find((r) => r.id === selectedRouteId)
+    if (route) navigator.start(route)
+  }
 
   // Re-plan when route preferences change.
   useEffect(() => {
@@ -88,6 +108,7 @@ export function MapScreen({ email }: { email?: string }) {
   }, [prefs.avoidIncidents, prefs.avoidPoorLighting, prefs.preferBusierStreets])
 
   function endRoute() {
+    navigator.stop()
     setDestination(null)
     setRoutes([])
     setSelectedRouteId(null)
@@ -113,25 +134,36 @@ export function MapScreen({ email }: { email?: string }) {
         gestureHandling="greedy"
         onCameraChanged={(e: MapCameraChangedEvent) => setCenter(e.detail.center)}
       >
-        <GlowLayers cells={cells} showLights={showLights} showPopulation={showPopulation} />
+        <GlowLayers cells={cells} showLights={showLights} showPopulation={showPopulation} dimmed={!!nav} />
         {showReports && <ReportPins reports={reports} onSelect={setSelectedReport} />}
-        <RouteLines routes={routes} selectedId={selectedRouteId} destination={destination?.location ?? null} onSelect={setSelectedRouteId} />
+        <RouteLines
+          routes={nav ? [nav.route] : routes}
+          selectedId={nav?.route.id ?? selectedRouteId}
+          destination={destination?.location ?? null}
+          fit={!nav}
+          onSelect={setSelectedRouteId}
+        />
         <UserDot location={location} />
         <FocusOn target={location ?? BERKELEY} token={focusToken} />
+        {nav && <FollowUser location={location} />}
       </Map>
 
       {placing && <Pin className="center-pin" />}
 
       <div className="overlay">
-        <div className="top-bar">
-          <button className="search-pill glass glass-interactive" onClick={() => setSearching(true)}>
-            <Search />
-            <span className={destination ? '' : 'placeholder'}>{destination?.name ?? 'Where to?'}</span>
-          </button>
-          <button className="circle glass glass-interactive" onClick={() => setMenuOpen((o) => !o)} aria-label="Map layers">
-            <Filter />
-          </button>
-        </div>
+        {nav ? (
+          <TurnBanner nav={nav} />
+        ) : (
+          <div className="top-bar">
+            <button className="search-pill glass glass-interactive" onClick={() => setSearching(true)}>
+              <Search />
+              <span className={destination ? '' : 'placeholder'}>{destination?.name ?? 'Where to?'}</span>
+            </button>
+            <button className="circle glass glass-interactive" onClick={() => setMenuOpen((o) => !o)} aria-label="Map layers">
+              <Filter />
+            </button>
+          </div>
+        )}
         {banner && <div className="banner glass">{banner}</div>}
         {message && <div className="error-pill glass">{message}</div>}
         <div className="spacer" />
@@ -144,6 +176,14 @@ export function MapScreen({ email }: { email?: string }) {
               <button className="btn-prominent red" onClick={() => setReportAt(center)}>Next</button>
             </div>
           </div>
+        ) : nav ? (
+          <NavigationBar
+            nav={nav}
+            muted={navigator.muted}
+            onToggleMute={() => navigator.setMuted(!navigator.muted)}
+            onReport={() => setPlacing(true)}
+            onEnd={endRoute}
+          />
         ) : destination ? (
           routing ? (
             <div className="place-panel glass">Finding a safer route…</div>
@@ -151,7 +191,14 @@ export function MapScreen({ email }: { email?: string }) {
             // Reporting stays available mid-route; the student is most likely to see something while walking.
             <>
               <div style={{ alignSelf: 'flex-end' }}>{reportButton}</div>
-              <RouteCard destinationName={destination.name} routes={routes} selectedId={selectedRouteId} onSelect={setSelectedRouteId} onClose={endRoute} />
+              <RouteCard
+                destinationName={destination.name}
+                routes={routes}
+                selectedId={selectedRouteId}
+                onSelect={setSelectedRouteId}
+                onStart={startNavigation}
+                onClose={endRoute}
+              />
             </>
           ) : (
             <button className="btn-glass glass" style={{ alignSelf: 'center' }} onClick={endRoute}>Close</button>

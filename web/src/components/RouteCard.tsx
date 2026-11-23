@@ -7,7 +7,7 @@ function crowdLabel(level: number) {
   return 'Busy'
 }
 
-function formatDistance(meters: number) {
+export function formatDistance(meters: number) {
   const miles = meters / 1609.34
   return miles < 0.1 ? `${Math.round(meters * 3.281)} ft` : `${miles.toFixed(1)} mi`
 }
@@ -18,12 +18,14 @@ export function RouteCard({
   routes,
   selectedId,
   onSelect,
+  onStart,
   onClose,
 }: {
   destinationName: string
   routes: SafeRoute[]
   selectedId: string | null
   onSelect: (id: string) => void
+  onStart: () => void
   onClose: () => void
 }) {
   return (
@@ -62,6 +64,9 @@ export function RouteCard({
           </div>
         </button>
       ))}
+      <button className="btn-prominent green" disabled={!selectedId} onClick={onStart}>
+        ▲ Start
+      </button>
     </div>
   )
 }
