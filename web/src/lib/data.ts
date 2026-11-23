@@ -74,7 +74,7 @@ export function usePopulation() {
         if (data) setCells(data as PopulationCell[])
       })
     load()
-    const timer = setInterval(load, 120_000)
+    const timer = setInterval(load, 30_000)
     return () => clearInterval(timer)
   }, [])
 
@@ -91,7 +91,10 @@ export function usePopulation() {
   return { cells, crowdLevel }
 }
 
-/** Device location, plus anonymous pings (rounded to ~11 m) every three minutes while sharing is on. */
+/**
+ * Device location, plus — while sharing is on — an anonymous ping (rounded to ~11 m) whenever the
+ * student has moved 25 m, or at least once a minute, so the density map tracks where people are now.
+ */
 export function useLocation(sharePings: boolean) {
   const [location, setLocation] = useState<LatLng | null>(null)
   const latest = useRef<LatLng | null>(null)
@@ -112,16 +115,22 @@ export function useLocation(sharePings: boolean) {
 
   useEffect(() => {
     if (!sharePings) return
+    let lastSent: { at: LatLng; time: number } | null = null
     const ping = () => {
       const c = latest.current
       if (!c) return
+      const moved = !lastSent || distance(lastSent.at, c) >= 25
+      const stale = !lastSent || Date.now() - lastSent.time >= 60_000
+      if (!moved && !stale) return
       supabase
         .from('location_pings')
         .insert({ lat: Math.round(c.lat * 10_000) / 10_000, lng: Math.round(c.lng * 10_000) / 10_000 })
-        .then(() => {})
+        .then(({ error }) => {
+          if (!error) lastSent = { at: c, time: Date.now() }
+        })
     }
     ping()
-    const timer = setInterval(ping, 180_000)
+    const timer = setInterval(ping, 10_000)
     return () => clearInterval(timer)
   }, [sharePings])
 

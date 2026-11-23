@@ -72,7 +72,12 @@ drop policy if exists "signed-in users add their own pings" on public.location_p
 create policy "signed-in users add their own pings" on public.location_pings
   for insert to authenticated with check (user_id = auth.uid() and simulated = false);
 
--- Aggregated density (~11 m cells): real pings from the last 30 minutes plus simulated seed pings.
+-- Aggregated density (~11 m cells): each student once at their latest ping from the last
+-- 10 minutes, plus simulated seed pings. (Same as migrations/002_live_population.sql.)
+create index if not exists location_pings_user_recent
+  on public.location_pings (user_id, created_at desc)
+  where not simulated;
+
 create or replace function public.population_cells()
 returns table (lat double precision, lng double precision, weight integer)
 language sql
@@ -80,11 +85,21 @@ security definer
 set search_path = public
 stable
 as $$
+  with live as (
+    select distinct on (user_id) lat, lng
+    from public.location_pings
+    where not simulated and created_at > now() - interval '10 minutes'
+    order by user_id, created_at desc
+  ),
+  points as (
+    select lat, lng from live
+    union all
+    select lat, lng from public.location_pings where simulated
+  )
   select round(lat::numeric, 4)::double precision,
          round(lng::numeric, 4)::double precision,
          count(*)::integer
-  from public.location_pings
-  where simulated or created_at > now() - interval '30 minutes'
+  from points
   group by 1, 2;
 $$;
 

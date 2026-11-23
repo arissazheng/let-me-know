@@ -26,7 +26,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Population Map")
                 } footer: {
-                    Text("While the app is open, sends your approximate location (rounded to about 10 m) every few minutes. It's only used to show how crowded areas are, never who is where.")
+                    Text("While the app is open, sends your approximate location (rounded to about 10 m) as you move, about once a minute. It's only used to show how crowded areas are, never who is where.")
                 }
 
                 Section("About the Data") {

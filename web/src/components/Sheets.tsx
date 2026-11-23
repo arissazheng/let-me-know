@@ -190,8 +190,8 @@ export function SettingsSheet({ prefs, email, onSignOut, onClose }: { prefs: Pre
       <div className="group-title">Population Map</div>
       <div className="group">{row('Share my location anonymously', <LocationArrow className="icon" />, prefs.shareLocation)}</div>
       <div className="group-footer">
-        While the app is open, sends your approximate location (rounded to about 10 m) every few minutes. It's only used to show how
-        crowded areas are, never who is where.
+        While the app is open, sends your approximate location (rounded to about 10 m) as you move, about once a minute. It's only
+        used to show how crowded areas are, never who is where.
       </div>
 
       <div className="group-title">About the Data</div>

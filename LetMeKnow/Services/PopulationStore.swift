@@ -18,11 +18,11 @@ final class PopulationStore {
     private(set) var cells: [Cell] = []
     private var maxWeight = 1
 
-    /// Refreshes the aggregate every two minutes while the map is open.
+    /// Refreshes the aggregate every 30 seconds while the map is open.
     func keepFresh() async {
         while !Task.isCancelled {
             await load()
-            try? await Task.sleep(for: .seconds(120))
+            try? await Task.sleep(for: .seconds(30))
         }
     }
 
@@ -42,15 +42,24 @@ final class PopulationStore {
         return min(Double(total) / Double(maxWeight * 3), 1)
     }
 
-    /// Sends an anonymous ping (rounded to ~11 m) every three minutes while sharing is on.
+    /// While sharing is on, sends an anonymous ping (rounded to ~11 m) whenever the student has
+    /// moved 25 m, or at least once a minute, so the density map tracks where people are now.
     func sharePings(from location: LocationManager) async {
+        var lastSent: (coordinate: CLLocation, at: Date)?
         while !Task.isCancelled {
             if let c = location.coordinate {
-                struct Ping: Encodable { let lat: Double; let lng: Double }
-                let ping = Ping(lat: (c.latitude * 10_000).rounded() / 10_000, lng: (c.longitude * 10_000).rounded() / 10_000)
-                _ = try? await supabase.from("location_pings").insert(ping).execute()
+                let here = CLLocation(latitude: c.latitude, longitude: c.longitude)
+                let moved = lastSent.map { here.distance(from: $0.coordinate) >= 25 } ?? true
+                let stale = lastSent.map { Date().timeIntervalSince($0.at) >= 60 } ?? true
+                if moved || stale {
+                    struct Ping: Encodable { let lat: Double; let lng: Double }
+                    let ping = Ping(lat: (c.latitude * 10_000).rounded() / 10_000, lng: (c.longitude * 10_000).rounded() / 10_000)
+                    if (try? await supabase.from("location_pings").insert(ping).execute()) != nil {
+                        lastSent = (here, Date())
+                    }
+                }
             }
-            try? await Task.sleep(for: .seconds(180))
+            try? await Task.sleep(for: .seconds(10))
         }
     }
 }
