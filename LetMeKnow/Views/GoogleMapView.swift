@@ -63,7 +63,7 @@ struct GoogleMapView: UIViewRepresentable {
     final class Coordinator: NSObject, GMSMapViewDelegate {
         var parent: GoogleMapView
         var lastFocusToken = 0
-        let lightLayer = Coordinator.glowLayer(color: GoogleMapView.lightYellow, radius: 40)
+        let lightLayer = Coordinator.glowLayer(color: GoogleMapView.lightYellow, radius: 50)
         let populationLayer: GMUHeatmapTileLayer = {
             let layer = Coordinator.glowLayer(color: GoogleMapView.populationBlue, radius: 50)
             layer.zIndex = 1  // draw students above streetlights
@@ -83,14 +83,21 @@ struct GoogleMapView: UIViewRepresentable {
         static func glowLayer(color: UIColor, radius: UInt) -> GMUHeatmapTileLayer {
             let layer = GMUHeatmapTileLayer()
             layer.radius = radius
-            layer.opacity = 0.9
+            layer.opacity = 0.85
             // Normalize against street-level zooms. The default (zoom 5–10) measures against
             // citywide clusters, which leaves single blocks too faint to see at zoom 15+.
-            layer.minimumZoomIntensity = 15
-            layer.maximumZoomIntensity = 17
+            layer.minimumZoomIntensity = 16
+            layer.maximumZoomIntensity = 18
+            // Opacity rises steadily with density: sparse areas stay see-through with soft
+            // edges, and only the densest clusters reach the fully saturated color.
             layer.gradient = GMUGradient(
-                colors: [color.withAlphaComponent(0.55), color.withAlphaComponent(0.85), color],
-                startPoints: [0.02, 0.2, 0.6],
+                colors: [
+                    color.withAlphaComponent(0.08),
+                    color.withAlphaComponent(0.35),
+                    color.withAlphaComponent(0.7),
+                    color,
+                ],
+                startPoints: [0.02, 0.15, 0.4, 0.8],
                 colorMapSize: 256
             )
             return layer
