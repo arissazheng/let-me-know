@@ -201,3 +201,4 @@ input, textarea { font: inherit; color: inherit; }
 .nav-eta .mins { font-size: 22px; font-weight: 700; color: var(--green); }
 .nav-eta .sub { font-size: 14px; color: var(--secondary-label); }
 .report-circle { background: var(--red); color: #fff; box-shadow: 0 4px 14px rgba(255, 59, 48, 0.35); }
+.recenter { align-self: flex-start; font-weight: 600; color: var(--tint); animation: drop-in 0.25s ease; }

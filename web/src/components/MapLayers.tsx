@@ -187,17 +187,45 @@ export function UserDot({ location }: { location: LatLng | null }) {
   )
 }
 
-/** While navigating, keeps the camera on the student at street level. */
-export function FollowUser({ location }: { location: LatLng | null }) {
+/**
+ * Navigation camera. While following, keeps the camera on the student, pointed along their
+ * direction of travel; starting or re-centering snaps to a street-level, tilted view, and later
+ * fixes keep the student's own zoom and tilt. When navigation ends, flattens back to north-up.
+ */
+export function NavigationCamera({
+  navigating,
+  following,
+  location,
+  heading,
+}: {
+  navigating: boolean
+  following: boolean
+  location: LatLng | null
+  heading: number | null
+}) {
   const map = useMap()
+  const wasNavigating = useRef(false)
+  const snapped = useRef(false)
+
   useEffect(() => {
     if (!map) return
-    map.setZoom(18)
-  }, [map])
-  // Re-center directly: rapid fixes would keep interrupting panTo's animation.
-  useEffect(() => {
-    if (map && location) map.setCenter(location)
-  }, [map, location])
+    if (wasNavigating.current && !navigating) map.moveCamera({ tilt: 0, heading: 0, zoom: 16 })
+    wasNavigating.current = navigating
+    if (!navigating || !following) {
+      snapped.current = false
+      return
+    }
+    if (!location) return
+    const turn = heading != null ? { heading } : {}
+    // Move directly: rapid fixes would keep interrupting panTo's animation.
+    if (snapped.current) {
+      map.moveCamera({ center: location, ...turn })
+    } else {
+      snapped.current = true
+      map.moveCamera({ center: location, zoom: 18, tilt: 45, ...turn })
+    }
+  }, [map, navigating, following, location, heading])
+
   return null
 }
 

@@ -1,6 +1,6 @@
 import { Map, type MapCameraChangedEvent } from '@vis.gl/react-google-maps'
 import { useEffect, useRef, useState } from 'react'
-import { BERKELEY } from '../lib/config'
+import { BERKELEY, config } from '../lib/config'
 import { submitReport, useLocation, usePopulation, useReports, type Report } from '../lib/data'
 import type { LatLng } from '../lib/geo'
 import { useNavigator } from '../lib/navigation'
@@ -8,7 +8,7 @@ import { usePref } from '../lib/prefs'
 import { passesNear, safeRoutes, type SafeRoute } from '../lib/routing'
 import { supabase } from '../lib/supabase'
 import { Check, Filter, Gear, Locate, Pin, ReportBubble, Search } from './Icons'
-import { FocusOn, FollowUser, GlowLayers, ReportPins, RouteLines, UserDot } from './MapLayers'
+import { FocusOn, GlowLayers, NavigationCamera, ReportPins, RouteLines, UserDot } from './MapLayers'
 import { NavigationBar, TurnBanner } from './Navigation'
 import { RouteCard } from './RouteCard'
 import { NewReportSheet, ReportDetail, SearchSheet, SettingsSheet, type Destination } from './Sheets'
@@ -25,7 +25,7 @@ export function MapScreen({ email }: { email?: string }) {
 
   const { reports, latestLive, error: reportsError } = useReports()
   const { cells, crowdLevel } = usePopulation()
-  const location = useLocation(shareLocation[0])
+  const { location, heading } = useLocation(shareLocation[0])
 
   const [center, setCenter] = useState<LatLng>(BERKELEY)
   const [focusToken, setFocusToken] = useState(0)
@@ -44,6 +44,8 @@ export function MapScreen({ email }: { email?: string }) {
   const [banner, setBanner] = useState<string | null>(null)
   const navigator = useNavigator()
   const nav = navigator.state
+  /** During navigation the camera follows the student until they move the map themselves. */
+  const [following, setFollowing] = useState(true)
 
   const prefs = {
     avoidIncidents: avoidIncidents[0],
@@ -98,7 +100,9 @@ export function MapScreen({ email }: { email?: string }) {
 
   function startNavigation() {
     const route = routes.find((r) => r.id === selectedRouteId)
-    if (route) navigator.start(route)
+    if (!route) return
+    setFollowing(true)
+    navigator.start(route)
   }
 
   // Re-plan when route preferences change.
@@ -129,10 +133,15 @@ export function MapScreen({ email }: { email?: string }) {
         className="map"
         defaultCenter={BERKELEY}
         defaultZoom={15.5}
+        mapId={config.googleMapId}
+        renderingType="VECTOR"
+        headingInteractionEnabled
+        tiltInteractionEnabled
         disableDefaultUI
         clickableIcons={false}
         gestureHandling="greedy"
         onCameraChanged={(e: MapCameraChangedEvent) => setCenter(e.detail.center)}
+        onDragstart={() => nav && setFollowing(false)}
       >
         <GlowLayers cells={cells} showLights={showLights} showPopulation={showPopulation} dimmed={!!nav} />
         {showReports && <ReportPins reports={reports} onSelect={setSelectedReport} />}
@@ -145,7 +154,7 @@ export function MapScreen({ email }: { email?: string }) {
         />
         <UserDot location={location} />
         <FocusOn target={location ?? BERKELEY} token={focusToken} />
-        {nav && <FollowUser location={location} />}
+        <NavigationCamera navigating={!!nav} following={following} location={location} heading={heading} />
       </Map>
 
       {placing && <Pin className="center-pin" />}
@@ -177,6 +186,12 @@ export function MapScreen({ email }: { email?: string }) {
             </div>
           </div>
         ) : nav ? (
+          <>
+          {!following && (
+            <button className="btn-glass glass glass-interactive recenter" onClick={() => setFollowing(true)}>
+              ▲ Re-center
+            </button>
+          )}
           <NavigationBar
             nav={nav}
             muted={navigator.muted}
@@ -184,6 +199,7 @@ export function MapScreen({ email }: { email?: string }) {
             onReport={() => setPlacing(true)}
             onEnd={endRoute}
           />
+          </>
         ) : destination ? (
           routing ? (
             <div className="place-panel glass">Finding a safer route…</div>

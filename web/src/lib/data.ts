@@ -97,6 +97,8 @@ export function usePopulation() {
  */
 export function useLocation(sharePings: boolean) {
   const [location, setLocation] = useState<LatLng | null>(null)
+  /** Direction of travel in degrees, from the device or from recent movement. */
+  const [heading, setHeading] = useState<number | null>(null)
   const latest = useRef<LatLng | null>(null)
 
   useEffect(() => {
@@ -104,6 +106,9 @@ export function useLocation(sharePings: boolean) {
     const id = navigator.geolocation.watchPosition(
       (pos) => {
         const here = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        const previous = latest.current
+        if (pos.coords.heading != null && !Number.isNaN(pos.coords.heading)) setHeading(pos.coords.heading)
+        else if (previous && distance(previous, here) > 3) setHeading(bearing(previous, here))
         latest.current = here
         setLocation(here)
       },
@@ -134,5 +139,13 @@ export function useLocation(sharePings: boolean) {
     return () => clearInterval(timer)
   }, [sharePings])
 
-  return location
+  return { location, heading }
+}
+
+/** Initial compass bearing from `a` to `b`, in degrees. */
+function bearing(a: LatLng, b: LatLng) {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const y = Math.sin(toRad(b.lng - a.lng)) * Math.cos(toRad(b.lat))
+  const x = Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) - Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lng - a.lng))
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
 }

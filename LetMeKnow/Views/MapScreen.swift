@@ -7,6 +7,8 @@ struct MapScreen: View {
     @State private var population = PopulationStore()
     @State private var location = LocationManager()
     @State private var navigator = Navigator()
+    /// During navigation the camera follows the student until they move the map themselves.
+    @State private var isFollowing = true
 
     @AppStorage(PreferenceKey.avoidIncidents) private var avoidIncidents = true
     @AppStorage(PreferenceKey.avoidPoorLighting) private var avoidPoorLighting = true
@@ -51,9 +53,11 @@ struct MapScreen: View {
                 destination: destination?.coordinate,
                 focus: focus,
                 focusToken: focusToken,
-                follow: navigator.isActive ? location.coordinate.map { ($0, location.course, location.updateCount) } : nil,
+                follow: navigator.isActive && isFollowing ? location.coordinate.map { ($0, location.course, location.updateCount) } : nil,
+                isNavigating: navigator.isActive,
                 bottomPadding: navigator.isActive ? 120 : destination == nil ? 110 : 390,
                 onCameraIdle: { cameraCenter = $0 },
+                onUserGesture: { if navigator.isActive { isFollowing = false } },
                 onSelectReport: { selectedReport = $0 },
                 onSelectRoute: { selectedRouteID = $0 }
             )
@@ -95,6 +99,7 @@ struct MapScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
             .animation(.snappy, value: banner)
+            .animation(.snappy, value: isFollowing)
         }
         .sheet(item: $selectedReport) { ReportDetailSheet(report: $0) }
         .sheet(isPresented: $isSearching) {
@@ -198,6 +203,19 @@ struct MapScreen: View {
             .padding(16)
             .glassEffect(.regular, in: .rect(cornerRadius: 28))
         } else if navigator.isActive {
+            if !isFollowing {
+                Button {
+                    isFollowing = true
+                } label: {
+                    Label("Re-center", systemImage: "location.north.fill")
+                        .font(.headline)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.glass)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .transition(.scale.combined(with: .opacity))
+            }
             NavigationBar(
                 remainingSeconds: navigator.remainingSeconds,
                 remainingMeters: navigator.remainingMeters,
@@ -340,6 +358,7 @@ struct MapScreen: View {
 
     private func startNavigation() {
         guard let route = routes.first(where: { $0.id == selectedRouteID }) else { return }
+        isFollowing = true
         navigator.start(route)
     }
 

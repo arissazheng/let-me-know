@@ -6,6 +6,7 @@ function required(name: string): string {
 
 export const config = {
   googleMapsApiKey: required('VITE_GOOGLE_MAPS_API_KEY'),
+  googleMapId: required('VITE_GOOGLE_MAP_ID'),
   supabaseUrl: required('VITE_SUPABASE_URL'),
   supabaseAnonKey: required('VITE_SUPABASE_ANON_KEY'),
   valhallaUrl: required('VITE_VALHALLA_URL'),

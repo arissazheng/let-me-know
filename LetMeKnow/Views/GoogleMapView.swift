@@ -16,10 +16,13 @@ struct GoogleMapView: UIViewRepresentable {
     /// Bump to move the camera to `focus`.
     var focus: CLLocationCoordinate2D?
     var focusToken: Int
-    /// While navigating: keep the camera on the student, pointed along their direction of travel.
+    /// While navigating and following: keep the camera on the student, pointed along their direction of travel.
     var follow: (coordinate: CLLocationCoordinate2D, bearing: Double?, token: Int)?
+    var isNavigating: Bool
     var bottomPadding: CGFloat
     var onCameraIdle: (CLLocationCoordinate2D) -> Void
+    /// The student panned, zoomed, rotated, or tilted the map themselves.
+    var onUserGesture: () -> Void
     var onSelectReport: (Report) -> Void
     var onSelectRoute: (SafeRoute.ID) -> Void
 
@@ -62,20 +65,27 @@ struct GoogleMapView: UIViewRepresentable {
         }
 
         if let follow {
-            if follow.token != coordinator.lastFollowToken {
+            let resuming = !coordinator.isFollowing
+            if resuming || follow.token != coordinator.lastFollowToken {
                 coordinator.lastFollowToken = follow.token
                 coordinator.isFollowing = true
+                // Starting or re-centering snaps to a street-level, tilted view; later fixes keep the
+                // student's own zoom and tilt and only move and turn the camera.
                 map.animate(to: GMSCameraPosition(
                     target: follow.coordinate,
-                    zoom: 18,
+                    zoom: resuming ? 18 : map.camera.zoom,
                     bearing: follow.bearing ?? map.camera.bearing,
-                    viewingAngle: 45
+                    viewingAngle: resuming ? 45 : map.camera.viewingAngle
                 ))
             }
-        } else if coordinator.isFollowing {
+        } else {
             coordinator.isFollowing = false
+        }
+
+        if coordinator.wasNavigating, !isNavigating {
             map.animate(to: GMSCameraPosition(target: map.camera.target, zoom: 16, bearing: 0, viewingAngle: 0))
         }
+        coordinator.wasNavigating = isNavigating
     }
 
     final class Coordinator: NSObject, GMSMapViewDelegate {
@@ -83,6 +93,7 @@ struct GoogleMapView: UIViewRepresentable {
         var lastFocusToken = 0
         var lastFollowToken = -1
         var isFollowing = false
+        var wasNavigating = false
         let lightLayer = Coordinator.glowLayer(color: GoogleMapView.lightYellow, radius: 50)
         let populationLayer: GMUHeatmapTileLayer = {
             let layer = Coordinator.glowLayer(color: GoogleMapView.populationBlue, radius: 50)
@@ -184,7 +195,7 @@ struct GoogleMapView: UIViewRepresentable {
                 destinationMarker = marker
             }
 
-            if isNewRouteSet, !isFollowing, let first = routes.first {
+            if isNewRouteSet, !wasNavigating, let first = routes.first {
                 let bounds = first.path.reduce(GMSCoordinateBounds()) { $0.includingCoordinate($1) }
                 map.animate(with: GMSCameraUpdate.fit(bounds, withPadding: 60))
             }
@@ -198,6 +209,10 @@ struct GoogleMapView: UIViewRepresentable {
 
         func mapView(_ mapView: GMSMapView, didTap overlay: GMSOverlay) {
             if let id = overlay.userData as? SafeRoute.ID { parent.onSelectRoute(id) }
+        }
+
+        func mapView(_ mapView: GMSMapView, willMove gesture: Bool) {
+            if gesture { parent.onUserGesture() }
         }
 
         func mapView(_ mapView: GMSMapView, idleAt position: GMSCameraPosition) {
