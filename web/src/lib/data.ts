@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { distance, type LatLng } from './geo'
 import { supabase } from './supabase'
 
+export type MediaItem = { url: string; type: 'image' | 'video' }
+
 /** A student-filed safety report (F3, F4). */
 export type Report = {
   id: string
@@ -12,6 +14,16 @@ export type Report = {
   media_type: 'image' | 'video' | null
   created_at: string
   is_demo?: boolean
+  /** v2: optional title, any number of photos/videos, and the street it's on. */
+  title?: string | null
+  media?: MediaItem[] | null
+  place_name?: string | null
+}
+
+/** All attachments, including a v1 report's single media_url. */
+export function reportMedia(report: Report): MediaItem[] {
+  if (report.media?.length) return report.media
+  return report.media_url ? [{ url: report.media_url, type: report.media_type ?? 'image' }] : []
 }
 
 /** Live reports from the last 24 hours (F3), plus realtime inserts (F8). */
@@ -45,21 +57,41 @@ export function useReports() {
   return { reports, latestLive, error }
 }
 
-/** F4: uploads optional media, then files the report. */
-export async function submitReport(description: string, at: LatLng, file: File | null) {
-  let media_url: string | null = null
-  let media_type: Report['media_type'] = null
-  if (file) {
-    const ext = file.name.split('.').pop() || (file.type.startsWith('video') ? 'mov' : 'jpg')
+/** F4: uploads any photos/videos, looks up the street, then files the report. */
+export async function submitReport(report: { title: string; description: string; at: LatLng; files: File[] }) {
+  const bucket = supabase.storage.from('report-media')
+  const media: MediaItem[] = []
+  for (const file of report.files) {
+    const isVideo = file.type.startsWith('video')
+    const ext = file.name.split('.').pop() || (isVideo ? 'mov' : 'jpg')
     const path = `${crypto.randomUUID()}.${ext}`
-    const bucket = supabase.storage.from('report-media')
     const { error } = await bucket.upload(path, file, { contentType: file.type })
     if (error) throw error
-    media_url = bucket.getPublicUrl(path).data.publicUrl
-    media_type = file.type.startsWith('video') ? 'video' : 'image'
+    media.push({ url: bucket.getPublicUrl(path).data.publicUrl, type: isVideo ? 'video' : 'image' })
   }
-  const { error } = await supabase.from('reports').insert({ lat: at.lat, lng: at.lng, description, media_url, media_type })
+  const { error } = await supabase.from('reports').insert({
+    lat: report.at.lat,
+    lng: report.at.lng,
+    title: report.title || null,
+    description: report.description,
+    media,
+    // v1 apps read the first attachment from these columns.
+    media_url: media[0]?.url ?? null,
+    media_type: media[0]?.type ?? null,
+    place_name: await streetName(report.at),
+  })
   if (error) throw error
+}
+
+/** The street at a point, from OpenStreetMap (Nominatim); null if the lookup fails. */
+async function streetName(at: LatLng): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat=${at.lat}&lon=${at.lng}`
+    const json = (await (await fetch(url)).json()) as { address?: { road?: string; pedestrian?: string; footway?: string } }
+    return json.address?.road ?? json.address?.pedestrian ?? json.address?.footway ?? null
+  } catch {
+    return null
+  }
 }
 
 export type PopulationCell = { lat: number; lng: number; weight: number }

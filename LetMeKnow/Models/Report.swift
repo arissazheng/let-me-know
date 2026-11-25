@@ -11,9 +11,24 @@ struct Report: Identifiable, Decodable, Equatable {
     let mediaType: MediaType?
     let createdAt: Date
     let isDemo: Bool
+    /// v2: optional title, any number of photos/videos, and the street it's on.
+    let title: String?
+    let media: [MediaItem]
+    let placeName: String?
 
     enum MediaType: String, Codable {
         case image, video
+    }
+
+    struct MediaItem: Codable, Equatable, Hashable {
+        let url: URL
+        let type: MediaType
+    }
+
+    /// All attachments, including a v1 report's single media_url.
+    var attachments: [MediaItem] {
+        if !media.isEmpty { return media }
+        return mediaURL.map { [MediaItem(url: $0, type: mediaType ?? .image)] } ?? []
     }
 
     var coordinate: CLLocationCoordinate2D { .init(latitude: lat, longitude: lng) }
@@ -24,6 +39,8 @@ struct Report: Identifiable, Decodable, Equatable {
         case mediaType = "media_type"
         case createdAt = "created_at"
         case isDemo = "is_demo"
+        case title, media
+        case placeName = "place_name"
     }
 
     init(from decoder: Decoder) throws {
@@ -35,6 +52,9 @@ struct Report: Identifiable, Decodable, Equatable {
         mediaURL = try c.decodeIfPresent(String.self, forKey: .mediaURL).flatMap(URL.init(string:))
         mediaType = try c.decodeIfPresent(MediaType.self, forKey: .mediaType)
         isDemo = try c.decodeIfPresent(Bool.self, forKey: .isDemo) ?? false
+        title = try c.decodeIfPresent(String.self, forKey: .title)
+        media = (try? c.decodeIfPresent([MediaItem].self, forKey: .media)) ?? []
+        placeName = try c.decodeIfPresent(String.self, forKey: .placeName)
         // PostgREST and Realtime format timestamps slightly differently, so parse leniently.
         let raw = try c.decode(String.self, forKey: .createdAt)
         guard let date = Report.parseTimestamp(raw) else {
@@ -60,13 +80,18 @@ struct Report: Identifiable, Decodable, Equatable {
 struct NewReport: Encodable {
     let lat: Double
     let lng: Double
+    let title: String?
     let description: String
+    let media: [Report.MediaItem]
+    /// v1 apps read the first attachment from these columns.
     let mediaURL: String?
     let mediaType: Report.MediaType?
+    let placeName: String?
 
     enum CodingKeys: String, CodingKey {
-        case lat, lng, description
+        case lat, lng, title, description, media
         case mediaURL = "media_url"
         case mediaType = "media_type"
+        case placeName = "place_name"
     }
 }

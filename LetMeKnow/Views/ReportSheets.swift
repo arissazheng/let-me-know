@@ -1,139 +1,367 @@
 import AVKit
-import CoreLocation
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// F4: describe an incident at the pinned location, optionally with a photo or video.
-struct NewReportSheet: View {
-    var coordinate: CLLocationCoordinate2D
-    var onSubmit: (String, PickedMedia?) async throws -> Void
+/// UCPD's emergency line from a cell phone (ucpd.berkeley.edu).
+let ucpdPhone = URL(string: "tel://5106423333")!
+let emergencyPhone = URL(string: "tel://911")!
 
-    @Environment(\.dismiss) private var dismiss
+/// Large + button in the map's bottom corner. Press and hold to reveal Report, UCPD, and 911,
+/// then slide onto one and let go to choose it. A quick tap opens the same options to tap.
+struct ActionFab: View {
+    enum Action: CaseIterable {
+        case report, ucpd, emergency
+
+        var label: String {
+            switch self {
+            case .report: "Report"
+            case .ucpd: "UCPD"
+            case .emergency: "911"
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .report: "exclamationmark.bubble.fill"
+            case .ucpd: "shield.lefthalf.filled"
+            case .emergency: "phone.fill"
+            }
+        }
+
+        /// Where the option sits relative to the + button's center.
+        var offset: CGSize {
+            switch self {
+            case .emergency: CGSize(width: 0, height: -90)
+            case .ucpd: CGSize(width: -80, height: -72)
+            case .report: CGSize(width: -92, height: 4)
+            }
+        }
+    }
+
+    var onAction: (Action) -> Void
+
+    @State private var isOpen = false
+    @State private var hovered: Action?
+    @State private var pressStart: Date?
+    @State private var holdTask: Task<Void, Never>?
+    private let size: CGFloat = 66
+
+    var body: some View {
+        ZStack {
+            // Only drawn while open: glass ignores .opacity, so hidden options would show through.
+            if isOpen {
+                ForEach(Action.allCases, id: \.self) { action in
+                    option(action)
+                }
+            }
+            plusButton
+        }
+        .animation(.bouncy(duration: 0.3), value: isOpen)
+        .animation(.snappy(duration: 0.15), value: hovered)
+    }
+
+    private func option(_ action: Action) -> some View {
+        Button {
+            choose(action)
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: action.symbol)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(action == .emergency ? .white : action == .report ? .red : .blue)
+                    .frame(width: 52, height: 52)
+                    .glassEffect(action == .emergency ? .regular.tint(.red) : .regular.interactive(), in: .circle)
+                    .scaleEffect(hovered == action ? 1.18 : 1)
+                Text(action.label)
+                    .font(.caption.bold())
+                    .shadow(color: .white.opacity(0.9), radius: 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .offset(action.offset)
+        .transition(
+            .scale(scale: 0.3)
+                .combined(with: .opacity)
+                .combined(with: .offset(x: -action.offset.width, y: -action.offset.height))
+        )
+    }
+
+    private var plusButton: some View {
+        Image(systemName: "plus")
+            .font(.system(size: 28, weight: .semibold))
+            .rotationEffect(.degrees(isOpen ? 45 : 0))
+            .frame(width: size, height: size)
+            .contentShape(.rect)
+            // Plain (non-interactive) glass: interactive glass tracks touches itself and would
+            // cancel the hold-and-slide drag.
+            .glassEffect(.regular, in: .rect(cornerRadius: 22))
+            .gesture(holdAndSlide)
+            .accessibilityLabel("Report or call for help")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { isOpen.toggle() }
+    }
+
+    /// Press: open after a short hold. Drag: highlight the option under the finger. Release: choose it.
+    private var holdAndSlide: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                if pressStart == nil {
+                    pressStart = .now
+                    holdTask = Task {
+                        try? await Task.sleep(for: .milliseconds(250))
+                        guard !Task.isCancelled else { return }
+                        isOpen = true
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    }
+                }
+                if isOpen { hovered = action(at: value.location) }
+            }
+            .onEnded { value in
+                holdTask?.cancel()
+                let wasHold = pressStart.map { Date.now.timeIntervalSince($0) >= 0.25 } ?? false
+                pressStart = nil
+                if wasHold {
+                    if let action = action(at: value.location) { choose(action) } else { hovered = nil }
+                } else {
+                    isOpen.toggle()
+                }
+            }
+    }
+
+    /// The option within reach of a point in the + button's own coordinates.
+    private func action(at point: CGPoint) -> Action? {
+        let center = CGPoint(x: size / 2, y: size / 2)
+        return Action.allCases.first { action in
+            let target = CGPoint(x: center.x + action.offset.width, y: center.y + action.offset.height)
+            return hypot(point.x - target.x, point.y - target.y) < 36
+        }
+    }
+
+    private func choose(_ action: Action) {
+        isOpen = false
+        hovered = nil
+        onAction(action)
+    }
+}
+
+/// Liquid glass card over a faded map; tapping anywhere outside the card closes it.
+struct GlassModal<Content: View>: View {
+    var onClose: () -> Void
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ZStack {
+            Color(.systemBackground)
+                .opacity(0.62)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onClose)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) { content }
+                    .padding(20)
+                    .padding(.top, 6)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxHeight: 640)
+            .fixedSize(horizontal: false, vertical: true)
+            .glassEffect(.regular, in: .rect(cornerRadius: 32))
+            .overlay(alignment: .topTrailing) {
+                Button("Close", systemImage: "xmark", action: onClose)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
+                    .padding(12)
+            }
+            .padding(20)
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+    }
+}
+
+/// F4: optional title, a description, and any number of photos/videos.
+struct ReportFormView: View {
+    var onSubmit: (_ title: String, _ description: String, _ media: [PickedMedia]) async throws -> Void
+    var onClose: () -> Void
+
+    @State private var title = ""
     @State private var text = ""
-    @State private var pickerItem: PhotosPickerItem?
-    @State private var media: PickedMedia?
-    @State private var previewImage: Image?
+    @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var media: [PickedMedia] = []
+    @State private var previews: [UIImage?] = []
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("What happened?", text: $text, axis: .vertical)
-                        .lineLimit(4...8)
-                } footer: {
-                    Text("Reported at the pin you placed. Visible to signed-in students for 24 hours.")
-                }
+        GlassModal(onClose: onClose) {
+            TextField("Title (optional)", text: $title)
+                .font(.title.bold())
+                .padding(.trailing, 44)
 
-                Section {
-                    PhotosPicker(selection: $pickerItem, matching: .any(of: [.images, .videos])) {
-                        Label(media == nil ? "Add Photo or Video" : "Replace Media", systemImage: "photo.on.rectangle")
-                    }
-                    if let media {
-                        HStack {
-                            if let previewImage {
-                                previewImage.resizable().scaledToFill().frame(width: 56, height: 56).clipShape(.rect(cornerRadius: 8))
-                            } else {
-                                Image(systemName: "video.fill").frame(width: 56, height: 56)
-                            }
-                            Text(media.type == .video ? "Video attached" : "Photo attached")
-                            Spacer()
-                            Button("Remove", role: .destructive) {
-                                pickerItem = nil
-                                self.media = nil
-                                previewImage = nil
-                            }
-                        }
-                    }
-                }
+            Text("Description").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            TextField("What happened?", text: $text, axis: .vertical)
+                .lineLimit(5...10)
+                .padding(14)
+                .background(.background.opacity(0.7), in: .rect(cornerRadius: 16))
 
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red).font(.footnote)
+            Text("Upload (.JPG, .PNG, .MOV)").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 84, maximum: 84), spacing: 8)], alignment: .leading, spacing: 8) {
+                ForEach(media.indices, id: \.self) { i in
+                    thumbnail(i)
                 }
+                PhotosPicker(selection: $pickerItems, maxSelectionCount: 10, matching: .any(of: [.images, .videos])) {
+                    Image(systemName: "plus")
+                        .font(.title)
+                        .frame(width: 84, height: 84)
+                        .background(.background.opacity(0.5), in: .rect(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.secondary.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [6])))
+                }
+                .buttonStyle(.plain)
             }
-            .navigationTitle("Report")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Submit", systemImage: "checkmark") { Task { await submit() } }
-                        .buttonStyle(.glassProminent)
-                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
-                }
+
+            if let errorMessage {
+                Text(errorMessage).font(.footnote).foregroundStyle(.red)
             }
-            .onChange(of: pickerItem) { _, item in Task { await load(item) } }
-            .overlay { if isSubmitting { ProgressView() } }
+
+            HStack {
+                Spacer()
+                Button(isSubmitting ? "Submitting…" : "Confirm") { Task { await submit() } }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
+            }
         }
+        .onChange(of: pickerItems) { _, items in Task { await load(items) } }
     }
 
-    private func load(_ item: PhotosPickerItem?) async {
-        guard let item, let data = try? await item.loadTransferable(type: Data.self) else { return }
-        let isVideo = item.supportedContentTypes.contains { $0.conforms(to: .movie) }
-        let type = item.supportedContentTypes.first
-        media = PickedMedia(
-            data: data,
-            type: isVideo ? .video : .image,
-            fileExtension: type?.preferredFilenameExtension ?? (isVideo ? "mov" : "jpg"),
-            contentType: type?.preferredMIMEType ?? (isVideo ? "video/quicktime" : "image/jpeg")
-        )
-        previewImage = isVideo ? nil : UIImage(data: data).map(Image.init(uiImage:))
+    private func thumbnail(_ i: Int) -> some View {
+        Color.clear
+            .frame(width: 84, height: 84)
+            .overlay {
+                if let image = previews[i] {
+                    Image(uiImage: image).resizable().scaledToFill()
+                } else {
+                    Image(systemName: "video.fill").font(.title2).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity).background(.black)
+                }
+            }
+            .clipShape(.rect(cornerRadius: 14))
+            .overlay(alignment: .topTrailing) {
+                Button("Remove", systemImage: "xmark.circle.fill") {
+                    media.remove(at: i)
+                    previews.remove(at: i)
+                    pickerItems.removeAll()
+                }
+                .labelStyle(.iconOnly)
+                .foregroundStyle(.white, .black.opacity(0.55))
+                .padding(4)
+            }
+    }
+
+    /// Adds newly picked photos/videos.
+    private func load(_ items: [PhotosPickerItem]) async {
+        for item in items {
+            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+            let isVideo = item.supportedContentTypes.contains { $0.conforms(to: .movie) }
+            let type = item.supportedContentTypes.first
+            media.append(PickedMedia(
+                data: data,
+                type: isVideo ? .video : .image,
+                fileExtension: type?.preferredFilenameExtension ?? (isVideo ? "mov" : "jpg"),
+                contentType: type?.preferredMIMEType ?? (isVideo ? "video/quicktime" : "image/jpeg")
+            ))
+            previews.append(isVideo ? nil : UIImage(data: data))
+        }
+        if !items.isEmpty { pickerItems = [] }
     }
 
     private func submit() async {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            try await onSubmit(text.trimmingCharacters(in: .whitespacesAndNewlines), media)
-            dismiss()
+            try await onSubmit(title.trimmingCharacters(in: .whitespaces), text.trimmingCharacters(in: .whitespacesAndNewlines), media)
+            onClose()
         } catch {
             errorMessage = "Couldn't submit: \(error.localizedDescription)"
         }
     }
 }
 
-/// F3: read a report — text, image or video, and when it was posted.
-struct ReportDetailSheet: View {
+/// F3: a report's title, place, description, and a media library (large view + thumbnails).
+struct ReportDetailView: View {
     var report: Report
+    var onClose: () -> Void
+    @State private var index = 0
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(report.createdAt.formatted(.relative(presentation: .named)), systemImage: "clock")
-                    if report.isDemo {
-                        Text("Demo").font(.caption.bold()).padding(.horizontal, 8).padding(.vertical, 2)
-                            .glassEffect(.regular.tint(.orange.opacity(0.3)), in: .capsule)
-                    }
+        GlassModal(onClose: onClose) {
+            Text(report.title ?? "Incident report")
+                .font(.title.bold())
+                .padding(.trailing, 44)
+
+            HStack(spacing: 12) {
+                if let place = report.placeName {
+                    Label(place, systemImage: "mappin")
                 }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                Label(report.createdAt.formatted(.relative(presentation: .named)), systemImage: "clock")
+                if report.isDemo {
+                    Text("Demo").font(.caption.bold()).padding(.horizontal, 8).padding(.vertical, 2)
+                        .glassEffect(.regular.tint(.orange.opacity(0.3)), in: .capsule)
+                }
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
 
-                Text(report.description)
-                    .font(.title3)
+            Text(report.description)
+                .font(.body)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(14)
+                .background(.background.opacity(0.7), in: .rect(cornerRadius: 16))
 
-                if let url = report.mediaURL {
-                    switch report.mediaType {
-                    case .video:
-                        VideoPlayer(player: AVPlayer(url: url))
-                            .frame(height: 240)
-                            .clipShape(.rect(cornerRadius: 16))
-                    default:
-                        AsyncImage(url: url) { image in
-                            image.resizable().scaledToFit()
-                        } placeholder: {
-                            ProgressView().frame(maxWidth: .infinity, minHeight: 160)
+            let media = report.attachments
+            if media.indices.contains(index) {
+                HStack(alignment: .top, spacing: 8) {
+                    mediaView(media[index], large: true)
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(1, contentMode: .fit)
+                        .background(.black)
+                        .clipShape(.rect(cornerRadius: 18))
+                    if media.count > 1 {
+                        ScrollView {
+                            VStack(spacing: 6) {
+                                ForEach(media.indices, id: \.self) { i in
+                                    Button { index = i } label: {
+                                        mediaView(media[i], large: false)
+                                            .frame(width: 56, height: 56)
+                                            .clipShape(.rect(cornerRadius: 10))
+                                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(i == index ? Color.accentColor : .clear, lineWidth: 2))
+                                            .opacity(i == index ? 1 : 0.7)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
-                        .clipShape(.rect(cornerRadius: 16))
+                        .frame(width: 56)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(24)
         }
-        .presentationDetents([.medium, .large])
+    }
+
+    @ViewBuilder
+    private func mediaView(_ item: Report.MediaItem, large: Bool) -> some View {
+        switch item.type {
+        case .video:
+            if large {
+                VideoPlayer(player: AVPlayer(url: item.url)).id(item.url)
+            } else {
+                Image(systemName: "play.rectangle.fill").font(.title2).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity).background(.black)
+            }
+        case .image:
+            AsyncImage(url: item.url) { image in
+                image.resizable().aspectRatio(contentMode: large ? .fit : .fill)
+            } placeholder: {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
     }
 }

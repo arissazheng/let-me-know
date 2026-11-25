@@ -7,11 +7,12 @@ import { useNavigator } from '../lib/navigation'
 import { usePref } from '../lib/prefs'
 import { passesNear, safeRoutes, type SafeRoute } from '../lib/routing'
 import { supabase } from '../lib/supabase'
-import { Check, Filter, Gear, Locate, Pin, ReportBubble, Search } from './Icons'
+import { Check, Filter, Gear, Locate, Pin, Search } from './Icons'
 import { FocusOn, GlowLayers, NavigationCamera, ReportPins, RouteLines, UserDot } from './MapLayers'
 import { NavigationBar, TurnBanner } from './Navigation'
 import { RouteCard } from './RouteCard'
-import { NewReportSheet, ReportDetail, SearchSheet, SettingsSheet, type Destination } from './Sheets'
+import { ActionFab, ReportForm, ReportView, UCPD_PHONE } from './ReportCards'
+import { SearchSheet, SettingsSheet, type Destination } from './Sheets'
 
 /** The home screen: map, live reports, glows, search, safer routes, and reporting. */
 export function MapScreen({ email }: { email?: string }) {
@@ -121,10 +122,14 @@ export function MapScreen({ email }: { email?: string }) {
 
   const message = reportsError ?? routeError
 
-  const reportButton = (
-    <button className="btn-prominent red" style={{ display: 'flex', gap: 8, alignItems: 'center' }} onClick={() => setPlacing(true)}>
-      <ReportBubble /> Report
-    </button>
+  // Hold the + button and slide to Report, UCPD, or 911.
+  const fab = (
+    <ActionFab
+      onAction={(action) => {
+        if (action === 'report') setPlacing(true)
+        else window.location.href = action === 'ucpd' ? `tel:${UCPD_PHONE}` : 'tel:911'
+      }}
+    />
   )
 
   return (
@@ -206,7 +211,7 @@ export function MapScreen({ email }: { email?: string }) {
           ) : routes.length ? (
             // Reporting stays available mid-route; the student is most likely to see something while walking.
             <>
-              <div style={{ alignSelf: 'flex-end' }}>{reportButton}</div>
+              <div style={{ alignSelf: 'flex-end' }}>{fab}</div>
               <RouteCard
                 destinationName={destination.name}
                 routes={routes}
@@ -231,10 +236,12 @@ export function MapScreen({ email }: { email?: string }) {
               <button className="circle glass glass-interactive" onClick={() => setSettingsOpen(true)} aria-label="Settings">
                 <Gear />
               </button>
-              {reportButton}
-              <button className="circle glass glass-interactive" onClick={() => setFocusToken((t) => t + 1)} aria-label="My location">
-                <Locate />
-              </button>
+              <div className="bottom-right">
+                <button className="circle glass glass-interactive" onClick={() => setFocusToken((t) => t + 1)} aria-label="My location">
+                  <Locate />
+                </button>
+                {fab}
+              </div>
             </div>
           </>
         )}
@@ -258,12 +265,12 @@ export function MapScreen({ email }: { email?: string }) {
         </>
       )}
 
-      {selectedReport && <ReportDetail report={selectedReport} onClose={() => setSelectedReport(null)} />}
+      {selectedReport && <ReportView report={selectedReport} onClose={() => setSelectedReport(null)} />}
       {reportAt && (
-        <NewReportSheet
+        <ReportForm
           onClose={() => setReportAt(null)}
-          onSubmit={async (text, file) => {
-            await submitReport(text, reportAt, file)
+          onSubmit={async (report) => {
+            await submitReport({ ...report, at: reportAt })
             setPlacing(false)
           }}
         />

@@ -7,6 +7,7 @@ struct MapScreen: View {
     @State private var population = PopulationStore()
     @State private var location = LocationManager()
     @State private var navigator = Navigator()
+    @Environment(\.openURL) private var openURL
     /// During navigation the camera follows the student until they move the map themselves.
     @State private var isFollowing = true
 
@@ -77,6 +78,7 @@ struct MapScreen: View {
                     TurnBanner(maneuver: navigator.nextManeuver, meters: navigator.metersToManeuver, hasArrived: navigator.hasArrived)
                 } else {
                     topBar
+                    if destination == nil { legend }
                 }
                 if let banner {
                     Label(banner, systemImage: "arrow.triangle.turn.up.right.diamond.fill")
@@ -100,18 +102,25 @@ struct MapScreen: View {
             .padding(.bottom, 8)
             .animation(.snappy, value: banner)
             .animation(.snappy, value: isFollowing)
+
+            if let report = selectedReport {
+                ReportDetailView(report: report) { selectedReport = nil }
+            }
+            if isWritingReport {
+                ReportFormView { title, text, media in
+                    try await reportsStore.submit(title: title, description: text, at: reportCoordinate, media: media)
+                    isPlacingReport = false
+                } onClose: {
+                    isWritingReport = false
+                }
+            }
         }
-        .sheet(item: $selectedReport) { ReportDetailSheet(report: $0) }
+        .animation(.snappy(duration: 0.25), value: selectedReport?.id)
+        .animation(.snappy(duration: 0.25), value: isWritingReport)
         .sheet(isPresented: $isSearching) {
             SearchSheet(near: location.coordinate ?? cameraCenter) { picked in
                 destination = picked
                 Task { await planRoute() }
-            }
-        }
-        .sheet(isPresented: $isWritingReport) {
-            NewReportSheet(coordinate: reportCoordinate) { text, media in
-                try await reportsStore.submit(description: text, at: reportCoordinate, media: media)
-                isPlacingReport = false
             }
         }
         .sheet(isPresented: $isShowingSettings) { SettingsView() }
@@ -231,7 +240,7 @@ struct MapScreen: View {
             } else if !routes.isEmpty {
                 // Reporting stays available mid-route; the student is most likely to see something while walking.
                 VStack(alignment: .trailing, spacing: 10) {
-                    reportButton
+                    actionFab
                     RouteCard(
                         destinationName: destination.name,
                         routes: routes,
@@ -245,20 +254,14 @@ struct MapScreen: View {
                     .buttonStyle(.glass)
             }
         } else {
-            legend
             GlassEffectContainer(spacing: 16) {
-                HStack {
+                // Left side stays clear of the + button's Report / UCPD / 911 fan.
+                HStack(alignment: .bottom, spacing: 12) {
                     Button("Settings", systemImage: "gearshape") { isShowingSettings = true }
                         .labelStyle(.iconOnly)
                         .font(.title3)
                         .frame(width: 50, height: 50)
                         .glassEffect(.regular.interactive(), in: .circle)
-
-                    Spacer()
-
-                    reportButton
-
-                    Spacer()
 
                     Button("My Location", systemImage: "location.fill") {
                         focus = location.coordinate ?? GoogleMapView.berkeley
@@ -268,23 +271,25 @@ struct MapScreen: View {
                     .font(.title3)
                     .frame(width: 50, height: 50)
                     .glassEffect(.regular.interactive(), in: .circle)
+
+                    Spacer()
+
+                    actionFab
                 }
                 .buttonStyle(.plain)
             }
         }
     }
 
-    private var reportButton: some View {
-        Button {
-            isPlacingReport = true
-        } label: {
-            Label("Report", systemImage: "exclamationmark.bubble.fill")
-                .font(.headline)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
+    /// Hold the + button and slide to Report, UCPD, or 911.
+    private var actionFab: some View {
+        ActionFab { action in
+            switch action {
+            case .report: isPlacingReport = true
+            case .ucpd: openURL(ucpdPhone)
+            case .emergency: openURL(emergencyPhone)
+            }
         }
-        .buttonStyle(.glassProminent)
-        .tint(.red)
     }
 
     @ViewBuilder
