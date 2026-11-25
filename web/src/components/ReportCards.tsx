@@ -167,20 +167,25 @@ export function ReportForm({
       <input className="report-title-input" placeholder="Title (optional)" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
       <label className="field-label">Description</label>
       <textarea className="text-input glass-field" rows={5} placeholder="What happened?" value={description} onChange={(e) => setDescription(e.target.value)} />
-      <label className="field-label">Upload (.JPG, .PNG, .MOV)</label>
-      <div className="upload-grid">
-        {files.map((file, i) => (
-          <div key={previews[i]} className="upload-tile">
-            {file.type.startsWith('video') ? <video src={previews[i]} muted playsInline /> : <img src={previews[i]} alt="" />}
-            <button className="upload-remove" aria-label="Remove" onClick={() => setFiles((f) => f.filter((_, j) => j !== i))}>
-              <Close className="icon" />
-            </button>
-          </div>
-        ))}
-        <button className="upload-tile add" onClick={() => input.current?.click()} aria-label="Add photos or videos">
-          +
-        </button>
-      </div>
+      {files.length > 0 && (
+        <div className="upload-grid">
+          {files.map((file, i) => (
+            <div key={previews[i]} className="upload-tile">
+              {file.type.startsWith('video') ? <video src={previews[i]} muted playsInline /> : <img src={previews[i]} alt="" />}
+              <button className="upload-remove" aria-label="Remove" onClick={() => setFiles((f) => f.filter((_, j) => j !== i))}>
+                <Close className="icon" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button className="upload-box" onClick={() => input.current?.click()}>
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+        </svg>
+        <strong>{files.length ? 'Add more' : 'Upload'}</strong>
+        <small>.JPG, .PNG, .MOV</small>
+      </button>
       <input
         ref={input}
         type="file"

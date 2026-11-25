@@ -202,20 +202,32 @@ struct ReportFormView: View {
                 .padding(14)
                 .background(.background.opacity(0.7), in: .rect(cornerRadius: 16))
 
-            Text("Upload (.JPG, .PNG, .MOV)").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 84, maximum: 84), spacing: 8)], alignment: .leading, spacing: 8) {
-                ForEach(media.indices, id: \.self) { i in
-                    thumbnail(i)
+            if !media.isEmpty {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 84, maximum: 84), spacing: 8)], alignment: .leading, spacing: 8) {
+                    ForEach(media.indices, id: \.self) { i in
+                        thumbnail(i)
+                    }
                 }
-                PhotosPicker(selection: $pickerItems, maxSelectionCount: 10, matching: .any(of: [.images, .videos])) {
-                    Image(systemName: "plus")
-                        .font(.title)
-                        .frame(width: 84, height: 84)
-                        .background(.background.opacity(0.5), in: .rect(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.secondary.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [6])))
-                }
-                .buttonStyle(.plain)
             }
+
+            PhotosPicker(selection: $pickerItems, maxSelectionCount: 10, matching: .any(of: [.images, .videos])) {
+                VStack(spacing: 6) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(.tint)
+                    Text(media.isEmpty ? "Upload" : "Add more")
+                        .font(.subheadline.weight(.semibold))
+                    Text(".JPG, .PNG, .MOV")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(.background.opacity(0.5), in: .rect(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.secondary.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [6])))
+                .contentShape(.rect(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
 
             if let errorMessage {
                 Text(errorMessage).font(.footnote).foregroundStyle(.red)
