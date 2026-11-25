@@ -274,3 +274,4 @@ input, textarea { font: inherit; color: inherit; }
 .upload-box svg { color: var(--tint); }
 .upload-box strong { font-size: 15px; }
 .upload-box small { font-size: 12px; color: var(--secondary-label); }
+.required { color: var(--red); }

@@ -57,8 +57,12 @@ export function useReports() {
   return { reports, latestLive, error }
 }
 
-/** F4: uploads any photos/videos, looks up the street, then files the report. */
+/**
+ * F4: uploads any photos/videos, looks up the street, then files the report.
+ * A blank title is replaced by one an AI writes from the description.
+ */
 export async function submitReport(report: { title: string; description: string; at: LatLng; files: File[] }) {
+  const aiTitle = report.title ? Promise.resolve(null) : generateTitle(report.description)
   const bucket = supabase.storage.from('report-media')
   const media: MediaItem[] = []
   for (const file of report.files) {
@@ -72,7 +76,7 @@ export async function submitReport(report: { title: string; description: string;
   const { error } = await supabase.from('reports').insert({
     lat: report.at.lat,
     lng: report.at.lng,
-    title: report.title || null,
+    title: report.title || (await aiTitle),
     description: report.description,
     media,
     // v1 apps read the first attachment from these columns.
@@ -81,6 +85,12 @@ export async function submitReport(report: { title: string; description: string;
     place_name: await streetName(report.at),
   })
   if (error) throw error
+}
+
+/** A short title summarizing the description (supabase/functions/generate-title); null if it fails. */
+async function generateTitle(description: string): Promise<string | null> {
+  const { data, error } = await supabase.functions.invoke<{ title: string | null }>('generate-title', { body: { description } })
+  return error ? null : (data?.title ?? null)
 }
 
 /** The street at a point, from OpenStreetMap (Nominatim); null if the lookup fails. */

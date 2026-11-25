@@ -43,7 +43,9 @@ final class ReportsStore {
     }
 
     /// F4: uploads any photos/videos, looks up the street, then files the report.
+    /// A blank title is replaced by one an AI writes from the description.
     func submit(title: String, description: String, at coordinate: CLLocationCoordinate2D, media: [PickedMedia]) async throws {
+        async let aiTitle = title.isEmpty ? Self.generateTitle(for: description) : nil
         let bucket = supabase.storage.from("report-media")
         var uploaded: [Report.MediaItem] = []
         for item in media {
@@ -54,7 +56,7 @@ final class ReportsStore {
         let row = NewReport(
             lat: coordinate.latitude,
             lng: coordinate.longitude,
-            title: title.isEmpty ? nil : title,
+            title: title.isEmpty ? await aiTitle : title,
             description: description,
             media: uploaded,
             mediaURL: uploaded.first?.url.absoluteString,
@@ -62,6 +64,17 @@ final class ReportsStore {
             placeName: await Self.streetName(at: coordinate)
         )
         try await supabase.from("reports").insert(row).execute()
+    }
+
+    /// A short title summarizing the description (supabase/functions/generate-title); nil if it fails.
+    private static func generateTitle(for description: String) async -> String? {
+        struct Body: Encodable { let description: String }
+        struct Result: Decodable { let title: String? }
+        let result: Result? = try? await supabase.functions.invoke(
+            "generate-title",
+            options: FunctionInvokeOptions(body: Body(description: description))
+        )
+        return result?.title
     }
 
     /// The street at a point, from OpenStreetMap (Nominatim); nil if the lookup fails.

@@ -192,11 +192,14 @@ struct ReportFormView: View {
 
     var body: some View {
         GlassModal(onClose: onClose) {
-            TextField("Title (optional)", text: $title)
+            TextField("Title", text: $title)
                 .font(.title.bold())
                 .padding(.trailing, 44)
 
-            Text("Description").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            Text("Description \(Text("*").foregroundStyle(.red))")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Description, required")
             TextField("What happened?", text: $text, axis: .vertical)
                 .lineLimit(5...10)
                 .padding(14)

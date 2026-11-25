@@ -164,8 +164,10 @@ export function ReportForm({
 
   return (
     <GlassModal onClose={onClose}>
-      <input className="report-title-input" placeholder="Title (optional)" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
-      <label className="field-label">Description</label>
+      <input className="report-title-input" placeholder="Title" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
+      <label className="field-label">
+        Description <span className="required" aria-label="required">*</span>
+      </label>
       <textarea className="text-input glass-field" rows={5} placeholder="What happened?" value={description} onChange={(e) => setDescription(e.target.value)} />
       {files.length > 0 && (
         <div className="upload-grid">
