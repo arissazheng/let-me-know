@@ -312,14 +312,16 @@ struct ReportDetailView: View {
                 .font(.title.bold())
                 .padding(.trailing, 44)
 
-            HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
                 if let place = report.placeName {
                     Label(place, systemImage: "mappin")
                 }
-                Label(report.createdAt.formatted(.relative(presentation: .named)), systemImage: "clock")
-                if report.isDemo {
-                    Text("Demo").font(.caption.bold()).padding(.horizontal, 8).padding(.vertical, 2)
-                        .glassEffect(.regular.tint(.orange.opacity(0.3)), in: .capsule)
+                HStack(spacing: 12) {
+                    Label(report.createdAt.formatted(.relative(presentation: .named)), systemImage: "clock")
+                    if report.isDemo {
+                        Text("Demo").font(.caption.bold()).padding(.horizontal, 8).padding(.vertical, 2)
+                            .glassEffect(.regular.tint(.orange.opacity(0.3)), in: .capsule)
+                    }
                 }
             }
             .font(.subheadline)
