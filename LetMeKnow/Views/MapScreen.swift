@@ -8,6 +8,7 @@ struct MapScreen: View {
     @State private var location = LocationManager()
     @State private var navigator = Navigator()
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
     /// During navigation the camera follows the student until they move the map themselves.
     @State private var isFollowing = true
 
@@ -124,9 +125,15 @@ struct MapScreen: View {
             }
         }
         .sheet(isPresented: $isShowingSettings) { SettingsView() }
-        .task {
-            location.start()
-            await reportsStore.load()
+        .task { location.start() }
+        // Reports from every student arrive live; reloading on return to the app and once a minute
+        // catches anything filed while the phone slept and drops reports older than 24 hours.
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            while !Task.isCancelled {
+                await reportsStore.load()
+                try? await Task.sleep(for: .seconds(60))
+            }
         }
         .task { await reportsStore.listen() }
         .task { await population.keepFresh() }

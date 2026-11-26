@@ -33,13 +33,20 @@ export function useReports() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase
-      .from('live_reports')
-      .select()
-      .then(({ data, error }) => {
-        if (error) setError(`Couldn't load reports: ${error.message}`)
-        else setReports(data as Report[])
-      })
+    const load = () =>
+      supabase
+        .from('live_reports')
+        .select()
+        .then(({ data, error }) => {
+          if (error) setError(`Couldn't load reports: ${error.message}`)
+          else setReports(data as Report[])
+        })
+    load()
+    // Reports from every student arrive live below; reloading when the tab comes back and once a
+    // minute catches anything filed while the phone slept and drops reports older than 24 hours.
+    const timer = setInterval(load, 60_000)
+    const onVisible = () => document.visibilityState === 'visible' && load()
+    document.addEventListener('visibilitychange', onVisible)
 
     const channel = supabase
       .channel('reports')
@@ -50,6 +57,8 @@ export function useReports() {
       })
       .subscribe()
     return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
       supabase.removeChannel(channel)
     }
   }, [])
