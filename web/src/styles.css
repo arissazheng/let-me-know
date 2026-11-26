@@ -275,3 +275,6 @@ input, textarea { font: inherit; color: inherit; }
 .upload-box strong { font-size: 15px; }
 .upload-box small { font-size: 12px; color: var(--secondary-label); }
 .required { color: var(--red); }
+.place-options { display: flex; gap: 10px; }
+.place-options button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 15px; }
+.place-options button:disabled { opacity: 0.45; }

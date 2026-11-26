@@ -7,7 +7,17 @@ import { Sheet, Toggle } from './Sheet'
 export type Destination = { name: string; location: LatLng }
 
 /** F5: enter a destination. */
-export function SearchSheet({ near, onPick, onClose }: { near: LatLng; onPick: (d: Destination) => void; onClose: () => void }) {
+export function SearchSheet({
+  title = 'Where to?',
+  near,
+  onPick,
+  onClose,
+}: {
+  title?: string
+  near: LatLng
+  onPick: (d: Destination) => void
+  onClose: () => void
+}) {
   const places = useMapsLibrary('places')
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<google.maps.places.AutocompleteSuggestion[]>([])
@@ -54,7 +64,7 @@ export function SearchSheet({ near, onPick, onClose }: { near: LatLng; onPick: (
   }
 
   return (
-    <Sheet title="Where to?" onClose={onClose}>
+    <Sheet title={title} onClose={onClose}>
       <label className="search-field">
         <Search className="icon" />
         <input autoFocus placeholder="Search for a place" value={query} onChange={(e) => setQuery(e.target.value)} />

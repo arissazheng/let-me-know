@@ -29,6 +29,7 @@ struct MapScreen: View {
     @State private var isWritingReport = false
     @State private var reportCoordinate = GoogleMapView.berkeley
     @State private var isSearching = false
+    @State private var isSearchingReportPlace = false
     @State private var isShowingSettings = false
 
     @State private var destination: SearchSheet.Destination?
@@ -40,6 +41,11 @@ struct MapScreen: View {
 
     private var preferences: RoutePreferences {
         RoutePreferences(avoidIncidents: avoidIncidents, avoidPoorLighting: avoidPoorLighting, preferBusierStreets: preferBusierStreets)
+    }
+
+    /// Room kept clear under the map's camera target for the cards at the bottom.
+    private var mapBottomPadding: CGFloat {
+        navigator.isActive ? 120 : destination == nil ? 110 : 390
     }
 
     var body: some View {
@@ -57,7 +63,7 @@ struct MapScreen: View {
                 focusToken: focusToken,
                 follow: navigator.isActive && isFollowing ? location.coordinate.map { ($0, location.course, location.updateCount) } : nil,
                 isNavigating: navigator.isActive,
-                bottomPadding: navigator.isActive ? 120 : destination == nil ? 110 : 390,
+                bottomPadding: mapBottomPadding,
                 onCameraIdle: { cameraCenter = $0 },
                 onUserGesture: { if navigator.isActive { isFollowing = false } },
                 onSelectReport: { selectedReport = $0 },
@@ -66,11 +72,13 @@ struct MapScreen: View {
             .ignoresSafeArea()
 
             if isPlacingReport {
+                // The pin's tip marks the camera target, which the map's padding (70 top, more at the
+                // bottom) moves above the middle of the screen.
                 Image(systemName: "mappin")
                     .font(.system(size: 44, weight: .bold))
                     .foregroundStyle(.red)
                     .shadow(radius: 4)
-                    .offset(y: -22)
+                    .offset(y: -22 + (GoogleMapView.topPadding - mapBottomPadding) / 2)
                     .allowsHitTesting(false)
             }
 
@@ -200,9 +208,28 @@ struct MapScreen: View {
     private var bottomBar: some View {
         if isPlacingReport {
             VStack(spacing: 12) {
-                Text("Move the map to place the pin where it happened.")
+                Text("Where did it happen? Drag the map to move the pin, or:")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
+                HStack(spacing: 10) {
+                    Button {
+                        guard let here = location.coordinate else { return }
+                        focus = here
+                        focusToken += 1
+                    } label: {
+                        Label("My Location", systemImage: "location.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .disabled(location.coordinate == nil)
+                    Button {
+                        isSearchingReportPlace = true
+                    } label: {
+                        Label("Type a Place", systemImage: "magnifyingglass")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.glass)
+                .font(.subheadline.weight(.semibold))
                 HStack {
                     Button("Cancel") { isPlacingReport = false }
                         .buttonStyle(.glass)
@@ -218,6 +245,12 @@ struct MapScreen: View {
             }
             .padding(16)
             .glassEffect(.regular, in: .rect(cornerRadius: 28))
+            .sheet(isPresented: $isSearchingReportPlace) {
+                SearchSheet(title: "Where did it happen?", near: location.coordinate ?? cameraCenter) { picked in
+                    focus = picked.coordinate
+                    focusToken += 1
+                }
+            }
         } else if navigator.isActive {
             if !isFollowing {
                 Button {

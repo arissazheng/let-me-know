@@ -30,11 +30,14 @@ export function MapScreen({ email }: { email?: string }) {
 
   const [center, setCenter] = useState<LatLng>(BERKELEY)
   const [focusToken, setFocusToken] = useState(0)
+  /** Where the next focus moves the map; null means the student's location. */
+  const [focusTarget, setFocusTarget] = useState<LatLng | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [placing, setPlacing] = useState(false)
   const [reportAt, setReportAt] = useState<LatLng | null>(null)
   const [searching, setSearching] = useState(false)
+  const [searchingReportPlace, setSearchingReportPlace] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const [destination, setDestination] = useState<Destination | null>(null)
@@ -93,6 +96,12 @@ export function MapScreen({ email }: { email?: string }) {
     if (navigator.update(location)) planRoute().then(() => showBanner('Off route. Found a new safer route.'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location])
+
+  /** Moves the map to a place, or to the student's location when null. */
+  function focusOn(target: LatLng | null) {
+    setFocusTarget(target)
+    setFocusToken((t) => t + 1)
+  }
 
   function showBanner(text: string) {
     setBanner(text)
@@ -158,7 +167,7 @@ export function MapScreen({ email }: { email?: string }) {
           onSelect={setSelectedRouteId}
         />
         <UserDot location={location} />
-        <FocusOn target={location ?? BERKELEY} token={focusToken} />
+        <FocusOn target={focusTarget ?? location ?? BERKELEY} token={focusToken} />
         <NavigationCamera navigating={!!nav} following={following} location={location} heading={heading} />
       </Map>
 
@@ -184,7 +193,15 @@ export function MapScreen({ email }: { email?: string }) {
 
         {placing ? (
           <div className="place-panel glass">
-            <div>Move the map to place the pin where it happened.</div>
+            <div>Where did it happen? Drag the map to move the pin, or:</div>
+            <div className="place-options">
+              <button className="btn-glass glass glass-interactive" disabled={!location} onClick={() => focusOn(null)}>
+                <Locate className="icon-sm" /> My Location
+              </button>
+              <button className="btn-glass glass glass-interactive" onClick={() => setSearchingReportPlace(true)}>
+                <Search className="icon-sm" /> Type a Place
+              </button>
+            </div>
             <div className="row">
               <button className="btn-glass glass glass-interactive" onClick={() => setPlacing(false)}>Cancel</button>
               <button className="btn-prominent red" onClick={() => setReportAt(center)}>Next</button>
@@ -237,7 +254,7 @@ export function MapScreen({ email }: { email?: string }) {
                 <Gear />
               </button>
               <div className="bottom-right">
-                <button className="circle glass glass-interactive" onClick={() => setFocusToken((t) => t + 1)} aria-label="My location">
+                <button className="circle glass glass-interactive" onClick={() => focusOn(null)} aria-label="My location">
                   <Locate />
                 </button>
                 {fab}
@@ -283,6 +300,14 @@ export function MapScreen({ email }: { email?: string }) {
             setDestination(d)
             planRoute(d)
           }}
+        />
+      )}
+      {searchingReportPlace && (
+        <SearchSheet
+          title="Where did it happen?"
+          near={location ?? center}
+          onClose={() => setSearchingReportPlace(false)}
+          onPick={(d) => focusOn(d.location)}
         />
       )}
       {settingsOpen && (

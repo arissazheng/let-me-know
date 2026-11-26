@@ -2,13 +2,14 @@ import CoreLocation
 import GooglePlacesSwift
 import SwiftUI
 
-/// F5: enter a destination.
+/// F5: enter a destination. Also used to type where an incident happened.
 struct SearchSheet: View {
     struct Destination {
         let name: String
         let coordinate: CLLocationCoordinate2D
     }
 
+    var title = "Where to?"
     var near: CLLocationCoordinate2D
     var onPick: (Destination) -> Void
 
@@ -42,7 +43,7 @@ struct SearchSheet: View {
                     }
                 }
             }
-            .navigationTitle("Where to?")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search for a place")
             .toolbar {

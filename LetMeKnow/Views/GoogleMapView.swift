@@ -27,6 +27,8 @@ struct GoogleMapView: UIViewRepresentable {
     var onSelectRoute: (SafeRoute.ID) -> Void
 
     static let berkeley = CLLocationCoordinate2D(latitude: 37.8690, longitude: -122.2595)
+    /// Room kept clear above the camera target for the search bar.
+    static let topPadding: CGFloat = 70
     static let lightYellow = UIColor(red: 1.0, green: 0.80, blue: 0.0, alpha: 1)
     static let populationBlue = UIColor(red: 0.04, green: 0.52, blue: 1.0, alpha: 1)
     static let safeGreen = UIColor(red: 0.20, green: 0.78, blue: 0.35, alpha: 1)
@@ -51,7 +53,7 @@ struct GoogleMapView: UIViewRepresentable {
     func updateUIView(_ map: GMSMapView, context: Context) {
         let coordinator = context.coordinator
         coordinator.parent = self
-        map.padding = UIEdgeInsets(top: 70, left: 0, bottom: bottomPadding, right: 0)
+        map.padding = UIEdgeInsets(top: Self.topPadding, left: 0, bottom: bottomPadding, right: 0)
 
         coordinator.lightLayer.map = showLightGlow ? map : nil
 
