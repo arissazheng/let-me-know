@@ -317,3 +317,7 @@ input, textarea { font: inherit; color: inherit; }
 .about { padding: 16px; }
 .about h3 { margin: 0 0 8px; font-size: 22px; }
 .about p { margin: 0; line-height: 1.4; }
+
+/* Sign-in: Stay logged in */
+.checkbox { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; align-self: center; cursor: pointer; }
+.checkbox input { width: 18px; height: 18px; accent-color: var(--tint); }

@@ -1,39 +1,26 @@
 import SwiftUI
 
-/// F1: sign in with a verified campus email via an emailed link.
+/// F1: sign in with a UC Berkeley Google account.
 struct SignInView: View {
     @Environment(AuthModel.self) private var auth
-    @State private var email = ""
-    @State private var linkSent = false
+    @State private var staySignedIn = true
     @State private var isWorking = false
-    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
             VStack(spacing: 8) {
-                Image(systemName: linkSent ? "envelope.open.fill" : "figure.walk.motion")
+                Image(systemName: "figure.walk.motion")
                     .font(.system(size: 56))
                     .foregroundStyle(.tint)
-                    .contentTransition(.symbolEffect(.replace))
-                Text(linkSent ? "Check your email" : "Let Me Know")
+                Text("Let Me Know")
                     .font(.largeTitle.bold())
-                Text(linkSent ? "Tap the sign-in link we sent to \(email) on this phone." : "Sign in with your campus email.")
+                Text("Sign in with your @\(AppConfig.campusEmailDomain) Google account.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
-            if !linkSent {
-                TextField("you@berkeley.edu", text: $email)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .padding()
-                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
-            }
-
-            if let errorMessage = errorMessage ?? auth.linkError {
+            if let errorMessage = auth.errorMessage {
                 Text(errorMessage)
                     .font(.footnote)
                     .foregroundStyle(.red)
@@ -41,32 +28,30 @@ struct SignInView: View {
             }
 
             Button {
-                Task { await send() }
+                Task {
+                    isWorking = true
+                    await auth.signInWithGoogle(staySignedIn: staySignedIn)
+                    isWorking = false
+                }
             } label: {
                 Group {
                     if isWorking {
                         ProgressView()
                     } else {
-                        Text(linkSent ? "Resend Link" : "Email Me a Sign-In Link")
+                        Label("Continue with Google", systemImage: "person.crop.circle.badge.checkmark")
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
-            .disabled(isWorking || email.isEmpty)
+            .disabled(isWorking)
 
-            if linkSent {
-                Button("Use a different email") {
-                    linkSent = false
-                    errorMessage = nil
-                }
-                .font(.footnote)
-            }
+            Toggle("Stay logged in", isOn: $staySignedIn)
+                .toggleStyle(CheckboxToggleStyle())
             Spacer()
         }
         .padding(24)
-        .animation(.snappy, value: linkSent)
         .background(
             LinearGradient(
                 colors: [Color(GoogleMapView.populationBlue).opacity(0.25), Color(GoogleMapView.lightYellow).opacity(0.2)],
@@ -76,20 +61,23 @@ struct SignInView: View {
             .ignoresSafeArea()
         )
     }
+}
 
-    private func send() async {
-        errorMessage = nil
-        guard AuthModel.isCampusEmail(email) else {
-            errorMessage = "Use your @\(AppConfig.campusEmailDomain) email."
-            return
+/// A tappable checkbox with its label, since iOS toggles are switches.
+private struct CheckboxToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                    .font(.title3)
+                    .foregroundStyle(configuration.isOn ? Color.accentColor : .secondary)
+                configuration.label
+                    .foregroundStyle(.primary)
+            }
         }
-        isWorking = true
-        defer { isWorking = false }
-        do {
-            try await auth.sendLink(to: email)
-            linkSent = true
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(configuration.isOn ? .isSelected : [])
     }
 }

@@ -4,22 +4,35 @@ import { useEffect, useState } from 'react'
 import { MapScreen } from './components/MapScreen'
 import { SignIn } from './components/SignIn'
 import { config } from './lib/config'
-import { supabase } from './lib/supabase'
+import { isCampusEmail, supabase } from './lib/supabase'
 
 export function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [linkError, setLinkError] = useState<string | null>(null)
 
   useEffect(() => {
-    // An expired or reused sign-in link comes back with an error in the URL.
+    // A refused Google sign-in (e.g. not a berkeley.edu account) comes back with an error in the URL.
     const params = new URLSearchParams(window.location.search + window.location.hash.replace('#', '&'))
     const error = params.get('error_description')
-    if (error) setLinkError(`That sign-in link didn't work (${error}). Send a new one.`)
+    if (error)
+      setLinkError(
+        error.includes('berkeley.edu') || error.includes('saving new user')
+          ? `Use your @${config.campusEmailDomain} Google account.`
+          : `Couldn't sign in (${error}). Try again.`,
+      )
 
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    supabase.auth.getSession().then(({ data }) =>
+      setSession(data.session?.user.email && isCampusEmail(data.session.user.email) ? data.session : null),
+    )
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+      // Only berkeley.edu accounts (the database also refuses others).
+      if (next?.user.email && !isCampusEmail(next.user.email)) {
+        setLinkError(`Use your @${config.campusEmailDomain} Google account.`)
+        supabase.auth.signOut()
+        return
+      }
       setSession(next)
-      // Drop ?code=… from the address bar once the link has been used.
+      // Drop ?code=… from the address bar once Google has sent the student back.
       if (next && window.location.search.includes('code=')) window.history.replaceState(null, '', window.location.pathname)
     })
     return () => data.subscription.unsubscribe()

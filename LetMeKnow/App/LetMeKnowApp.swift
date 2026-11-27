@@ -25,9 +25,6 @@ struct LetMeKnowApp: App {
             .environment(auth)
             .task { await auth.observe() }
             .task { await AccountSync.shared.observe() }
-            .onOpenURL { url in
-                Task { await auth.handle(url) }
-            }
         }
     }
 }
