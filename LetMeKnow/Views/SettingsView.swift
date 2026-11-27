@@ -1,11 +1,8 @@
 import SwiftUI
 
-/// F7: the menu — reporting, trip planning, the incident tracker, campus resources, notifications,
-/// route preferences, and the opt-in for preference-based location tracking.
+/// F7: the menu — the incident tracker, campus resources, notifications, route preferences, and
+/// the opt-in for preference-based location tracking.
 struct SettingsView: View {
-    var onReportIncident: () -> Void
-    var onPlanTrip: () -> Void
-
     @Environment(AuthModel.self) private var auth
     @Environment(\.dismiss) private var dismiss
 
@@ -19,20 +16,6 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    Button {
-                        dismiss()
-                        onReportIncident()
-                    } label: {
-                        menuRow("Report Incident", systemImage: "exclamationmark.bubble.fill")
-                    }
-                    .tint(.primary)
-                    Button {
-                        dismiss()
-                        onPlanTrip()
-                    } label: {
-                        menuRow("Trip Planner", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
-                    }
-                    .tint(.primary)
                     NavigationLink { IncidentTrackerView() } label: {
                         Label("Incident Tracker", systemImage: "tablecells")
                     }
@@ -91,14 +74,4 @@ struct SettingsView: View {
                 Task { if await !Notifier.shared.requestPermission() { notifyNewReports = false } }
             }
         }
-    }
-
-    /// Opens something on the map; styled like the rows that open a page.
-    private func menuRow(_ title: String, systemImage: String) -> some View {
-        Label {
-            Text(title).foregroundStyle(.primary)
-        } icon: {
-            Image(systemName: systemImage).foregroundStyle(.blue)
-        }
-    }
-}
+    }}

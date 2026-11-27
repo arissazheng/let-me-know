@@ -144,17 +144,7 @@ struct MapScreen: View {
                 Task { await planRoute() }
             }
         }
-        .sheet(isPresented: $isShowingSettings) {
-            SettingsView {
-                isPlacingReport = true
-            } onPlanTrip: {
-                // Let the settings sheet finish closing before the search sheet opens.
-                Task {
-                    try? await Task.sleep(for: .milliseconds(400))
-                    isSearching = true
-                }
-            }
-        }
+        .sheet(isPresented: $isShowingSettings) { SettingsView() }
         .task { location.start() }
         // Reports from every student arrive live; reloading on return to the app and once a minute
         // catches anything filed while the phone slept and drops reports older than 24 hours.

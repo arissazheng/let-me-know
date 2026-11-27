@@ -329,8 +329,6 @@ export function MapScreen({ email }: { email?: string }) {
         <SettingsSheet
           prefs={{ avoidIncidents, avoidPoorLighting, preferBusierStreets, shareLocation, notifyNewReports }}
           email={email}
-          onReportIncident={() => setPlacing(true)}
-          onPlanTrip={() => setSearching(true)}
           onOpenReport={setSelectedReport}
           onSignOut={() => supabase.auth.signOut()}
           onClose={() => setSettingsOpen(false)}

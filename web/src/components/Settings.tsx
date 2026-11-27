@@ -17,22 +17,18 @@ type Page = 'menu' | 'tracker' | 'resources' | 'about'
 const TITLES: Record<Page, string> = { menu: 'Settings', tracker: 'Incident Tracker', resources: 'Safety Resources', about: 'About Us' }
 
 /**
- * F7: the menu — reporting, trip planning, the incident tracker, campus resources, notifications,
- * route preferences, and the opt-in for preference-based location tracking.
+ * F7: the menu — the incident tracker, campus resources, notifications, route preferences, and the
+ * opt-in for preference-based location tracking.
  */
 export function SettingsSheet({
   prefs,
   email,
-  onReportIncident,
-  onPlanTrip,
   onOpenReport,
   onSignOut,
   onClose,
 }: {
   prefs: Prefs
   email?: string
-  onReportIncident: () => void
-  onPlanTrip: () => void
   onOpenReport: (report: Report) => void
   onSignOut: () => void
   onClose: () => void
@@ -66,14 +62,6 @@ export function SettingsSheet({
       {page === 'menu' && (
         <>
           <div className="group">
-            {link('Report Incident', () => {
-              onClose()
-              onReportIncident()
-            })}
-            {link('Trip Planner', () => {
-              onClose()
-              onPlanTrip()
-            })}
             {link('Incident Tracker', () => setPage('tracker'))}
             {link('Safety Resources', () => setPage('resources'))}
             {link('About Us', () => setPage('about'))}
