@@ -9,6 +9,7 @@ enum PreferenceKey {
     static let showLightGlow = "showLightGlow"
     static let showPopulationGlow = "showPopulationGlow"
     static let showReports = "showReports"
+    static let notifyNewReports = "notifyNewReports"
 }
 
 struct RoutePreferences {

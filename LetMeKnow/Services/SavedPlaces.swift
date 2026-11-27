@@ -18,17 +18,19 @@ struct SavedPlace: Codable, Hashable, Identifiable {
     }
 }
 
-/// Favorite places and recent searches for the search sheet, saved on the device.
+/// Favorite places and recent searches for the search sheet. Cached on the device and kept with the
+/// student's account by AccountSync.
+@MainActor
 @Observable
 final class SavedPlaces {
     static let shared = SavedPlaces()
     private static let recentLimit = 10
 
     private(set) var favorites: [SavedPlace] = load("savedPlaces.favorites") {
-        didSet { save(favorites, "savedPlaces.favorites") }
+        didSet { save(favorites, "savedPlaces.favorites"); AccountSync.shared.save() }
     }
     private(set) var recents: [SavedPlace] = load("savedPlaces.recents") {
-        didSet { save(recents, "savedPlaces.recents") }
+        didSet { save(recents, "savedPlaces.recents"); AccountSync.shared.save() }
     }
 
     func isFavorite(_ name: String) -> Bool { favorites.contains { $0.name == name } }
@@ -43,6 +45,11 @@ final class SavedPlaces {
     }
 
     func removeRecent(_ place: SavedPlace) { recents.removeAll { $0.name == place.name } }
+
+    func replace(favorites: [SavedPlace], recents: [SavedPlace]) {
+        self.favorites = favorites
+        self.recents = recents
+    }
 
     private static func load(_ key: String) -> [SavedPlace] {
         guard let data = UserDefaults.standard.data(forKey: key) else { return [] }

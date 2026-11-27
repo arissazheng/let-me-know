@@ -1,7 +1,11 @@
 import SwiftUI
 
-/// F7: route preferences, plus the opt-in for preference-based location tracking.
+/// F7: the menu — reporting, trip planning, the incident tracker, campus resources, notifications,
+/// route preferences, and the opt-in for preference-based location tracking.
 struct SettingsView: View {
+    var onReportIncident: () -> Void
+    var onPlanTrip: () -> Void
+
     @Environment(AuthModel.self) private var auth
     @Environment(\.dismiss) private var dismiss
 
@@ -9,10 +13,45 @@ struct SettingsView: View {
     @AppStorage(PreferenceKey.avoidPoorLighting) private var avoidPoorLighting = true
     @AppStorage(PreferenceKey.preferBusierStreets) private var preferBusierStreets = true
     @AppStorage(PreferenceKey.shareLocation) private var shareLocation = false
+    @AppStorage(PreferenceKey.notifyNewReports) private var notifyNewReports = false
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Button {
+                        dismiss()
+                        onReportIncident()
+                    } label: {
+                        menuRow("Report Incident", systemImage: "exclamationmark.bubble.fill")
+                    }
+                    .tint(.primary)
+                    Button {
+                        dismiss()
+                        onPlanTrip()
+                    } label: {
+                        menuRow("Trip Planner", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                    }
+                    .tint(.primary)
+                    NavigationLink { IncidentTrackerView() } label: {
+                        Label("Incident Tracker", systemImage: "tablecells")
+                    }
+                    NavigationLink { SafetyResourcesView() } label: {
+                        Label("Safety Resources", systemImage: "cross.case")
+                    }
+                    NavigationLink { AboutView() } label: {
+                        Label("About Us", systemImage: "info.circle")
+                    }
+                }
+
+                Section {
+                    Toggle("New incident reports", systemImage: "bell.badge", isOn: $notifyNewReports)
+                } header: {
+                    Text("Notifications")
+                } footer: {
+                    Text("Get a notification whenever a student reports an incident around campus.")
+                }
+
                 Section {
                     Toggle("Avoid live incidents", systemImage: "exclamationmark.triangle", isOn: $avoidIncidents)
                     Toggle("Avoid poorly lit streets", systemImage: "lightbulb", isOn: $avoidPoorLighting)
@@ -29,12 +68,6 @@ struct SettingsView: View {
                     Text("While the app is open, sends your approximate location (rounded to about 10 m) as you move, about once a minute. It's only used to show how crowded areas are, never who is where.")
                 }
 
-                Section("About the Data") {
-                    LabeledContent("Streetlights", value: "City of Berkeley")
-                    LabeledContent("Population", value: "Student pings + simulated")
-                    LabeledContent("Routes", value: "Valhalla / OpenStreetMap")
-                }
-
                 Section {
                     if let email = auth.email {
                         LabeledContent("Signed in as", value: email)
@@ -42,6 +75,8 @@ struct SettingsView: View {
                     Button("Sign Out", role: .destructive) {
                         Task { await auth.signOut() }
                     }
+                } footer: {
+                    Text("Favorites, recent searches, and these settings are saved to your account.")
                 }
             }
             .navigationTitle("Settings")
@@ -51,6 +86,19 @@ struct SettingsView: View {
                     Button("Done", systemImage: "checkmark") { dismiss() }
                 }
             }
+            .onChange(of: notifyNewReports) { _, on in
+                guard on else { return }
+                Task { if await !Notifier.shared.requestPermission() { notifyNewReports = false } }
+            }
+        }
+    }
+
+    /// Opens something on the map; styled like the rows that open a page.
+    private func menuRow(_ title: String, systemImage: String) -> some View {
+        Label {
+            Text(title).foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: systemImage).foregroundStyle(.blue)
         }
     }
 }

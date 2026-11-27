@@ -2,8 +2,8 @@ import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { useEffect, useRef, useState } from 'react'
 import type { LatLng } from '../lib/geo'
 import { useSavedPlaces, type SavedPlace } from '../lib/savedPlaces'
-import { Bulb, Clock, Close, LocationArrow, People, Search, Star, Warning } from './Icons'
-import { Sheet, Toggle } from './Sheet'
+import { Clock, Close, Search, Star } from './Icons'
+import { Sheet } from './Sheet'
 
 export type Destination = { name: string; location: LatLng }
 
@@ -58,7 +58,7 @@ export function SearchSheet({
       await place.fetchFields({ fields: ['displayName', 'location'] })
       if (!place.location) return null
       token.current = null
-      return { name: place.displayName ?? prediction.mainText?.text ?? 'Destination', location: place.location.toJSON() }
+      return { name: place.displayName ?? prediction.mainText?.text ?? 'Destination', ...place.location.toJSON() }
     } catch (e) {
       setError(`Couldn't load that place: ${(e as Error).message}`)
       return null
@@ -67,7 +67,7 @@ export function SearchSheet({
 
   function choose(place: SavedPlace) {
     saved.addRecent(place)
-    onPick(place)
+    onPick({ name: place.name, location: { lat: place.lat, lng: place.lng } })
     onClose()
   }
 
@@ -140,55 +140,6 @@ export function SearchSheet({
           )}
         </>
       )}
-    </Sheet>
-  )
-}
-
-export type Prefs = {
-  avoidIncidents: readonly [boolean, (v: boolean) => void]
-  avoidPoorLighting: readonly [boolean, (v: boolean) => void]
-  preferBusierStreets: readonly [boolean, (v: boolean) => void]
-  shareLocation: readonly [boolean, (v: boolean) => void]
-}
-
-/** F7: route preferences, plus the opt-in for preference-based location tracking. */
-export function SettingsSheet({ prefs, email, onSignOut, onClose }: { prefs: Prefs; email?: string; onSignOut: () => void; onClose: () => void }) {
-  const row = (label: string, icon: React.ReactNode, [on, set]: readonly [boolean, (v: boolean) => void]) => (
-    <div className="cell">
-      {icon}
-      <span className="label">{label}</span>
-      <Toggle on={on} onChange={set} label={label} />
-    </div>
-  )
-  return (
-    <Sheet title="Settings" onClose={onClose}>
-      <div className="group-title">Safer Routes</div>
-      <div className="group">
-        {row('Avoid live incidents', <Warning className="icon" />, prefs.avoidIncidents)}
-        {row('Avoid poorly lit streets', <Bulb className="icon" />, prefs.avoidPoorLighting)}
-        {row('Prefer busier streets', <People className="icon" />, prefs.preferBusierStreets)}
-      </div>
-
-      <div className="group-title">Population Map</div>
-      <div className="group">{row('Share my location anonymously', <LocationArrow className="icon" />, prefs.shareLocation)}</div>
-      <div className="group-footer">
-        While the app is open, sends your approximate location (rounded to about 10 m) as you move, about once a minute. It's only
-        used to show how crowded areas are, never who is where.
-      </div>
-
-      <div className="group-title">About the Data</div>
-      <div className="group">
-        <div className="cell"><span className="label">Streetlights</span><span className="value">City of Berkeley</span></div>
-        <div className="cell"><span className="label">Population</span><span className="value">Student pings + simulated</span></div>
-        <div className="cell"><span className="label">Routes</span><span className="value">Valhalla / OpenStreetMap</span></div>
-      </div>
-
-      <div className="group" style={{ marginTop: 24 }}>
-        {email && (
-          <div className="cell"><span className="label">Signed in as</span><span className="value">{email}</span></div>
-        )}
-        <button className="cell destructive" onClick={onSignOut}>Sign Out</button>
-      </div>
     </Sheet>
   )
 }

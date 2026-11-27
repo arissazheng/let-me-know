@@ -1,21 +1,9 @@
-import { useEffect, useState } from 'react'
+import { updateAccount, useAccount } from './account'
 
-/** A boolean setting remembered in this browser (Settings toggles and map layers). */
+/** A boolean setting (Settings toggles and map layers), kept with the student's account. */
 export function usePref(key: string, initial: boolean) {
-  const [value, setValue] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem(`lmk.${key}`)
-      return stored === null ? initial : stored === 'true'
-    } catch {
-      return initial
-    }
-  })
-  useEffect(() => {
-    try {
-      localStorage.setItem(`lmk.${key}`, String(value))
-    } catch {
-      // Private mode or blocked storage: keep the in-memory value.
-    }
-  }, [key, value])
+  const { preferences } = useAccount()
+  const value = preferences[key] ?? initial
+  const setValue = (next: boolean) => updateAccount({ preferences: { ...preferences, [key]: next } })
   return [value, setValue] as const
 }

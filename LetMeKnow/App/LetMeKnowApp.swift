@@ -1,6 +1,7 @@
 import GoogleMaps
 import GooglePlacesSwift
 import SwiftUI
+import UserNotifications
 
 @main
 struct LetMeKnowApp: App {
@@ -9,6 +10,7 @@ struct LetMeKnowApp: App {
     init() {
         GMSServices.provideAPIKey(AppConfig.googleMapsAPIKey)
         _ = PlacesClient.provideAPIKey(AppConfig.googleMapsAPIKey)
+        UNUserNotificationCenter.current().delegate = Notifier.shared
     }
 
     var body: some Scene {
@@ -22,6 +24,7 @@ struct LetMeKnowApp: App {
             }
             .environment(auth)
             .task { await auth.observe() }
+            .task { await AccountSync.shared.observe() }
             .onOpenURL { url in
                 Task { await auth.handle(url) }
             }

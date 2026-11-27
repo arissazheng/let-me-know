@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { getPreference } from './account'
 import { distance, type LatLng } from './geo'
 import { supabase } from './supabase'
 
@@ -24,6 +25,19 @@ export type Report = {
 export function reportMedia(report: Report): MediaItem[] {
   if (report.media?.length) return report.media
   return report.media_url ? [{ url: report.media_url, type: report.media_type ?? 'image' }] : []
+}
+
+/** Reports filed from this browser, so they don't notify their own reporter. */
+const ownReportIds = new Set<string>()
+
+/** Shows a browser notification for a new report, if the student turned them on in Settings. */
+function notifyNewReport(report: Report) {
+  if (!getPreference('notifyNewReports') || ownReportIds.has(report.id)) return
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  new Notification(report.title ?? 'New incident report', {
+    body: [report.place_name && `Near ${report.place_name}`, report.description].filter(Boolean).join(' · '),
+    tag: report.id,
+  })
 }
 
 /** Live reports from the last 24 hours (F3), plus realtime inserts (F8). */
@@ -54,6 +68,7 @@ export function useReports() {
         const report = payload.new as Report
         setReports((current) => (current.some((r) => r.id === report.id) ? current : [...current, report]))
         setLatestLive(report)
+        notifyNewReport(report)
       })
       .subscribe()
     return () => {
@@ -82,7 +97,10 @@ export async function submitReport(report: { title: string; description: string;
     if (error) throw error
     media.push({ url: bucket.getPublicUrl(path).data.publicUrl, type: isVideo ? 'video' : 'image' })
   }
+  const id = crypto.randomUUID()
+  ownReportIds.add(id)
   const { error } = await supabase.from('reports').insert({
+    id,
     lat: report.at.lat,
     lng: report.at.lng,
     title: report.title || (await aiTitle),

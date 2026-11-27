@@ -12,7 +12,8 @@ import { FocusOn, GlowLayers, NavigationCamera, ReportPins, RouteLines, UserDot 
 import { NavigationBar, RerouteAlert, TurnBanner } from './Navigation'
 import { RouteCard } from './RouteCard'
 import { ActionFab, ReportForm, ReportView, UCPD_PHONE } from './ReportCards'
-import { SearchSheet, SettingsSheet, type Destination } from './Sheets'
+import { SettingsSheet } from './Settings'
+import { SearchSheet, type Destination } from './Sheets'
 
 /** The home screen: map, live reports, glows, search, safer routes, and reporting. */
 export function MapScreen({ email }: { email?: string }) {
@@ -20,6 +21,7 @@ export function MapScreen({ email }: { email?: string }) {
   const avoidPoorLighting = usePref('avoidPoorLighting', true)
   const preferBusierStreets = usePref('preferBusierStreets', true)
   const shareLocation = usePref('shareLocation', false)
+  const notifyNewReports = usePref('notifyNewReports', false)
   const [showReports, setShowReports] = usePref('showReports', true)
   const [showLights, setShowLights] = usePref('showLightGlow', true)
   const [showPopulation, setShowPopulation] = usePref('showPopulationGlow', true)
@@ -296,7 +298,6 @@ export function MapScreen({ email }: { email?: string }) {
         </>
       )}
 
-      {selectedReport && <ReportView report={selectedReport} onClose={() => setSelectedReport(null)} />}
       {reportAt && (
         <ReportForm
           onClose={() => setReportAt(null)}
@@ -326,12 +327,17 @@ export function MapScreen({ email }: { email?: string }) {
       )}
       {settingsOpen && (
         <SettingsSheet
-          prefs={{ avoidIncidents, avoidPoorLighting, preferBusierStreets, shareLocation }}
+          prefs={{ avoidIncidents, avoidPoorLighting, preferBusierStreets, shareLocation, notifyNewReports }}
           email={email}
+          onReportIncident={() => setPlacing(true)}
+          onPlanTrip={() => setSearching(true)}
+          onOpenReport={setSelectedReport}
           onSignOut={() => supabase.auth.signOut()}
           onClose={() => setSettingsOpen(false)}
         />
       )}
+      {/* Last, so a report opened from the Incident Tracker shows above Settings. */}
+      {selectedReport && <ReportView report={selectedReport} onClose={() => setSelectedReport(null)} />}
     </div>
   )
 }

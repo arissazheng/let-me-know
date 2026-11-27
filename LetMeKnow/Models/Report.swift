@@ -78,6 +78,8 @@ struct Report: Identifiable, Decodable, Equatable {
 }
 
 struct NewReport: Encodable {
+    /// Chosen here so the app knows which live reports are its own.
+    let id: UUID
     let lat: Double
     let lng: Double
     let title: String?
@@ -89,7 +91,7 @@ struct NewReport: Encodable {
     let placeName: String?
 
     enum CodingKeys: String, CodingKey {
-        case lat, lng, title, description, media
+        case id, lat, lng, title, description, media
         case mediaURL = "media_url"
         case mediaType = "media_type"
         case placeName = "place_name"

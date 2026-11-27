@@ -13,6 +13,8 @@ final class ReportsStore {
     var errorMessage: String?
 
     private var channel: RealtimeChannelV2?
+    /// Reports filed from this phone, so they don't notify their own reporter.
+    private var ownReportIDs: Set<UUID> = []
 
     func load() async {
         do {
@@ -39,6 +41,9 @@ final class ReportsStore {
                 reports.append(report)
             }
             latestLiveReport = report
+            if UserDefaults.standard.bool(forKey: PreferenceKey.notifyNewReports), !ownReportIDs.contains(report.id) {
+                Notifier.shared.notify(about: report)
+            }
         }
     }
 
@@ -53,7 +58,10 @@ final class ReportsStore {
             _ = try await bucket.upload(path, data: item.data, options: FileOptions(contentType: item.contentType))
             uploaded.append(.init(url: try bucket.getPublicURL(path: path), type: item.type))
         }
+        let id = UUID()
+        ownReportIDs.insert(id)
         let row = NewReport(
+            id: id,
             lat: coordinate.latitude,
             lng: coordinate.longitude,
             title: title.isEmpty ? await aiTitle : title,
