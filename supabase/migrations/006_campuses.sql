@@ -1,11 +1,11 @@
--- Let Me Know v3 — any school's students, each campus with its own reports and safety resources.
--- Run once in the Supabase dashboard: SQL Editor → New query → paste → Run.
+-- Let Me Know v3 - any school's students, each campus with its own reports and safety resources.
+-- Run once in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
 --
--- A student's campus is their email's school domain (jane@g.ucla.edu → ucla.edu). Signing in with
+-- A student's campus is their email's school domain (jane@g.ucla.edu -> ucla.edu). Signing in with
 -- a .edu Google account from a school we haven't seen adds that campus here as 'pending'; the
 -- campus-info Edge Function then looks up its name, location, and safety resources.
 
--- ─── Campuses ──────────────────────────────────────────────────────────────
+-- --- Campuses --------------------------------------------------------------
 create table if not exists public.campuses (
   domain       text primary key,
   name         text,                -- "University of California, Berkeley"
@@ -25,7 +25,7 @@ drop policy if exists "signed-in students read campuses" on public.campuses;
 create policy "signed-in students read campuses" on public.campuses for select to authenticated using (true);
 grant select on public.campuses to authenticated;
 
--- jane@g.ucla.edu → ucla.edu; null for non-.edu addresses.
+-- jane@g.ucla.edu -> ucla.edu; null for non-.edu addresses.
 create or replace function public.campus_of(email text)
 returns text language sql immutable
 as $$ select lower(substring(email from '([A-Za-z0-9-]+\.edu)$')) $$;
@@ -69,7 +69,7 @@ $$;
 revoke all on function public.claim_campus(text) from public, anon, authenticated;
 grant execute on function public.claim_campus(text) to service_role;
 
--- ─── Reports belong to a campus ───────────────────────────────────────────
+-- --- Reports belong to a campus -------------------------------------------
 alter table public.reports add column if not exists campus text;
 update public.reports set campus = 'berkeley.edu' where campus is null; -- everything so far
 alter table public.reports alter column campus set default public.my_campus();
@@ -87,29 +87,99 @@ drop policy if exists "signed-in users file their own reports" on public.reports
 create policy "signed-in users file their own reports" on public.reports
   for insert to authenticated with check (user_id = auth.uid() and is_demo = false and campus = public.my_campus());
 
--- ─── UC Berkeley, the first campus ────────────────────────────────────────
+-- --- UC Berkeley, the first campus ----------------------------------------
 insert into public.campuses (domain, name, short_name, lat, lng, police_name, police_phone, status, resources)
 values (
   'berkeley.edu', 'University of California, Berkeley', 'UC Berkeley', 37.8690, -122.2595, 'UCPD', '5106423333', 'ready',
   $json$[
-    {"title": "Emergency", "footer": "Blue light phones on campus also connect straight to UCPD dispatch.", "items": [
-      {"label": "Emergency", "detail": "911", "phone": "911", "url": null, "source_url": null},
-      {"label": "UCPD Emergency from a Cell Phone", "detail": "(510) 642-3333", "phone": "5106423333", "url": null, "source_url": "https://ucpd.berkeley.edu/node/693"}
-    ]},
-    {"title": "UCPD Resources", "footer": null, "items": [
-      {"label": "UCPD Non-Emergency (24 hours)", "detail": "(510) 642-6760", "phone": "5106426760", "url": null, "source_url": "https://ucpd.berkeley.edu/node/693"},
-      {"label": "SafeWalk Escort", "detail": "Dusk – 3 AM, last call 2:30 AM · (510) 642-WALK", "phone": "5106429255", "url": null, "source_url": "https://nightsafety.berkeley.edu/"},
-      {"label": "Night Safety Shuttle", "detail": "7:30 PM – 3 AM · book in the Downtowner app", "phone": null, "url": "https://nightsafety.berkeley.edu/", "source_url": "https://nightsafety.berkeley.edu/"},
-      {"label": "Make a Report to UCPD", "detail": "ucpd.berkeley.edu", "phone": null, "url": "https://ucpd.berkeley.edu/make-report", "source_url": "https://ucpd.berkeley.edu/make-report"},
-      {"label": "Resource Guide", "detail": "Campus safety support", "phone": null, "url": "https://supportal.berkeley.edu/topics/safety", "source_url": "https://supportal.berkeley.edu/topics/safety"}
-    ]},
-    {"title": "Anonymous Tips", "footer": null, "items": [
-      {"label": "CalTIP (text)", "detail": "(510) 664-8477 · non-emergency crime", "phone": null, "url": "sms:5106648477", "source_url": "https://ucpd.berkeley.edu/node/693"}
-    ]},
-    {"title": "City of Berkeley", "footer": null, "items": [
-      {"label": "Berkeley Police Non-Emergency", "detail": "(510) 981-5900", "phone": "5109815900", "url": null, "source_url": null}
-    ]}
-  ]$json$::jsonb
+  {
+    "title": "Emergency",
+    "footer": "Blue light phones on campus also connect straight to UCPD dispatch.",
+    "items": [
+      {
+        "label": "Emergency",
+        "detail": "911",
+        "phone": "911",
+        "url": null,
+        "source_url": null
+      },
+      {
+        "label": "UCPD Emergency from a Cell Phone",
+        "detail": "(510) 642-3333",
+        "phone": "5106423333",
+        "url": null,
+        "source_url": "https://ucpd.berkeley.edu/node/693"
+      }
+    ]
+  },
+  {
+    "title": "UCPD Resources",
+    "footer": null,
+    "items": [
+      {
+        "label": "UCPD Non-Emergency (24 hours)",
+        "detail": "(510) 642-6760",
+        "phone": "5106426760",
+        "url": null,
+        "source_url": "https://ucpd.berkeley.edu/node/693"
+      },
+      {
+        "label": "SafeWalk Escort",
+        "detail": "Dusk \u2013 3 AM, last call 2:30 AM \u00b7 (510) 642-WALK",
+        "phone": "5106429255",
+        "url": null,
+        "source_url": "https://nightsafety.berkeley.edu/"
+      },
+      {
+        "label": "Night Safety Shuttle",
+        "detail": "7:30 PM \u2013 3 AM \u00b7 book in the Downtowner app",
+        "phone": null,
+        "url": "https://nightsafety.berkeley.edu/",
+        "source_url": "https://nightsafety.berkeley.edu/"
+      },
+      {
+        "label": "Make a Report to UCPD",
+        "detail": "ucpd.berkeley.edu",
+        "phone": null,
+        "url": "https://ucpd.berkeley.edu/make-report",
+        "source_url": "https://ucpd.berkeley.edu/make-report"
+      },
+      {
+        "label": "Resource Guide",
+        "detail": "Campus safety support",
+        "phone": null,
+        "url": "https://supportal.berkeley.edu/topics/safety",
+        "source_url": "https://supportal.berkeley.edu/topics/safety"
+      }
+    ]
+  },
+  {
+    "title": "Anonymous Tips",
+    "footer": null,
+    "items": [
+      {
+        "label": "CalTIP (text)",
+        "detail": "(510) 664-8477 \u00b7 non-emergency crime",
+        "phone": null,
+        "url": "sms:5106648477",
+        "source_url": "https://ucpd.berkeley.edu/node/693"
+      }
+    ]
+  },
+  {
+    "title": "City of Berkeley",
+    "footer": null,
+    "items": [
+      {
+        "label": "Berkeley Police Non-Emergency",
+        "detail": "(510) 981-5900",
+        "phone": "5109815900",
+        "url": null,
+        "source_url": null
+      }
+    ]
+  }
+]$json$::jsonb
 )
 on conflict (domain) do update set
   name = excluded.name, short_name = excluded.short_name, lat = excluded.lat, lng = excluded.lng,
