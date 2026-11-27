@@ -9,7 +9,7 @@ import { passesNear, safeRoutes, type SafeRoute } from '../lib/routing'
 import { supabase } from '../lib/supabase'
 import { Check, Filter, Gear, Locate, Pin, Search } from './Icons'
 import { FocusOn, GlowLayers, NavigationCamera, ReportPins, RouteLines, UserDot } from './MapLayers'
-import { NavigationBar, TurnBanner } from './Navigation'
+import { NavigationBar, RerouteAlert, TurnBanner } from './Navigation'
 import { RouteCard } from './RouteCard'
 import { ActionFab, ReportForm, ReportView, UCPD_PHONE } from './ReportCards'
 import { SearchSheet, SettingsSheet, type Destination } from './Sheets'
@@ -46,6 +46,8 @@ export function MapScreen({ email }: { email?: string }) {
   const [routing, setRouting] = useState(false)
   const [routeError, setRouteError] = useState<string | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
+  /** The report that last made the route re-plan, shown until the student closes or opens it. */
+  const [rerouteReport, setRerouteReport] = useState<Report | null>(null)
   const navigator = useNavigator()
   const nav = navigator.state
   /** During navigation the camera follows the student until they move the map themselves. */
@@ -86,7 +88,8 @@ export function MapScreen({ email }: { email?: string }) {
     lastHandled.current = latestLive.id
     const current = nav?.route ?? routes.find((r) => r.id === selectedRouteId)
     if (!destination || !current || !passesNear(current, latestLive, 75)) return
-    planRoute().then(() => showBanner('New report near your route. Route updated.'))
+    const report = latestLive
+    planRoute().then(() => setRerouteReport(report))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latestLive])
 
@@ -123,6 +126,7 @@ export function MapScreen({ email }: { email?: string }) {
 
   function endRoute() {
     navigator.stop()
+    setRerouteReport(null)
     setDestination(null)
     setRoutes([])
     setSelectedRouteId(null)
@@ -188,6 +192,16 @@ export function MapScreen({ email }: { email?: string }) {
           </div>
         )}
         {banner && <div className="banner glass">{banner}</div>}
+        {rerouteReport && (
+          <RerouteAlert
+            report={rerouteReport}
+            onViewDetails={() => {
+              setSelectedReport(rerouteReport)
+              setRerouteReport(null)
+            }}
+            onClose={() => setRerouteReport(null)}
+          />
+        )}
         {message && <div className="error-pill glass">{message}</div>}
         <div className="spacer" />
 

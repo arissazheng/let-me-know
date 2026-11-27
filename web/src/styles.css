@@ -278,3 +278,14 @@ input, textarea { font: inherit; color: inherit; }
 .place-options { display: flex; gap: 10px; }
 .place-options button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 15px; }
 .place-options button:disabled { opacity: 0.45; }
+
+/* Rerouted because of a new report near the route */
+.reroute-alert {
+  display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 24px;
+  background: rgba(255, 149, 0, 0.15); animation: drop-in 0.3s ease;
+}
+.reroute-text { flex: 1; min-width: 0; font-size: 15px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.reroute-title { font-size: 17px; font-weight: 700; }
+.link-button { color: var(--tint); font-weight: 600; font-size: 15px; padding: 2px 0 0; }
+.circle-sm { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.circle-sm svg { width: 14px; height: 14px; }

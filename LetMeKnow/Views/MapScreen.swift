@@ -38,6 +38,8 @@ struct MapScreen: View {
     @State private var isRouting = false
     @State private var routeError: String?
     @State private var banner: String?
+    /// The report that last made the route re-plan, shown until the student closes or opens it.
+    @State private var rerouteReport: Report?
 
     private var preferences: RoutePreferences {
         RoutePreferences(avoidIncidents: avoidIncidents, avoidPoorLighting: avoidPoorLighting, preferBusierStreets: preferBusierStreets)
@@ -97,6 +99,15 @@ struct MapScreen: View {
                         .glassEffect(.regular.tint(.orange.opacity(0.35)), in: .capsule)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
+                if let report = rerouteReport {
+                    RerouteAlert(report: report) {
+                        selectedReport = report
+                        rerouteReport = nil
+                    } onClose: {
+                        rerouteReport = nil
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 if let message = reportsStore.errorMessage ?? routeError {
                     Text(message)
                         .font(.footnote)
@@ -110,6 +121,7 @@ struct MapScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
             .animation(.snappy, value: banner)
+            .animation(.snappy, value: rerouteReport?.id)
             .animation(.snappy, value: isFollowing)
 
             if let report = selectedReport {
@@ -389,7 +401,7 @@ struct MapScreen: View {
         else { return }
         Task {
             await planRoute()
-            showBanner("New report near your route. Route updated.")
+            if destination != nil { rerouteReport = report }
         }
     }
 
@@ -409,6 +421,7 @@ struct MapScreen: View {
 
     private func endRoute() {
         navigator.stop()
+        rerouteReport = nil
         destination = nil
         routes = []
         selectedRouteID = nil

@@ -1,3 +1,4 @@
+import type { Report } from '../lib/data'
 import type { NavigationState } from '../lib/navigation'
 import { turnAngle } from '../lib/routing'
 import { formatDistance } from './RouteCard'
@@ -70,6 +71,26 @@ export function NavigationBar({
         </svg>
       </button>
       <button className="circle glass glass-interactive" onClick={onEnd} aria-label="End">
+        <Close />
+      </button>
+    </div>
+  )
+}
+
+/** Shown when a new report near the route made it re-plan: what happened, where, and a way to read it. */
+export function RerouteAlert({ report, onViewDetails, onClose }: { report: Report; onViewDetails: () => void; onClose: () => void }) {
+  return (
+    <div className="reroute-alert glass">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="#ff9500" aria-hidden>
+        <path d="M10.3 3.6a2 2 0 0 1 3.4 0l8.2 14.2a2 2 0 0 1-1.7 3H3.8a2 2 0 0 1-1.7-3Z" />
+        <path d="M12 9v4.5M12 17h.01" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+      </svg>
+      <div className="reroute-text">
+        <div className="reroute-title">Rerouted</div>
+        <div>{report.place_name ? `Incident on ${report.place_name}` : 'Incident near your route'}</div>
+        <button className="link-button" onClick={onViewDetails}>View Details</button>
+      </div>
+      <button className="circle-sm glass glass-interactive" onClick={onClose} aria-label="Close">
         <Close />
       </button>
     </div>

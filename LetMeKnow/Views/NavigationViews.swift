@@ -81,3 +81,35 @@ func formatDistance(_ meters: Double) -> String {
     let miles = meters / 1609.34
     return miles < 0.1 ? "\(Int((meters * 3.281 / 10).rounded()) * 10) ft" : String(format: "%.1f mi", miles)
 }
+
+/// Shown when a new report near the route made it re-plan: what happened, where, and a way to read it.
+struct RerouteAlert: View {
+    var report: Report
+    var onViewDetails: () -> Void
+    var onClose: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.title2)
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Rerouted").font(.headline)
+                Text(report.placeName.map { "Incident on \($0)" } ?? "Incident near your route")
+                    .font(.subheadline)
+                Button("View Details", action: onViewDetails)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.top, 2)
+            }
+            Spacer(minLength: 0)
+            Button("Close", systemImage: "xmark", action: onClose)
+                .labelStyle(.iconOnly)
+                .font(.subheadline.weight(.semibold))
+                .frame(width: 30, height: 30)
+                .glassEffect(.regular.interactive(), in: .circle)
+                .buttonStyle(.plain)
+        }
+        .padding(16)
+        .glassEffect(.regular.tint(.orange.opacity(0.2)), in: .rect(cornerRadius: 24))
+    }
+}
