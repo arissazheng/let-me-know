@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { config } from '../lib/config'
 import { signInWithGoogle } from '../lib/supabase'
 import { Walk } from './Icons'
 
-/** F1: sign in with a UC Berkeley Google account. */
+/** F1: sign in with a school (.edu) Google account. */
 export function SignIn({ linkError }: { linkError: string | null }) {
   const [stay, setStay] = useState(true)
   const [working, setWorking] = useState(false)
@@ -27,7 +26,7 @@ export function SignIn({ linkError }: { linkError: string | null }) {
       <div>
         <Walk className="hero" />
         <h1>Let Me Know</h1>
-        <p className="sub">Sign in with your @{config.campusEmailDomain} Google account.</p>
+        <p className="sub">Sign in with your school (.edu) Google account.</p>
       </div>
       {message && <div className="error">{message}</div>}
       <button className="btn-prominent" disabled={working} onClick={signIn}>

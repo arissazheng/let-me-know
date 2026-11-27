@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// F1: sign in with a UC Berkeley Google account.
+/// F1: sign in with a school (.edu) Google account.
 struct SignInView: View {
     @Environment(AuthModel.self) private var auth
     @State private var staySignedIn = true
@@ -15,7 +15,7 @@ struct SignInView: View {
                     .foregroundStyle(.tint)
                 Text("Let Me Know")
                     .font(.largeTitle.bold())
-                Text("Sign in with your @\(AppConfig.campusEmailDomain) Google account.")
+                Text("Sign in with your school (.edu) Google account.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

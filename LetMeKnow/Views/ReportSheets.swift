@@ -3,28 +3,18 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// UCPD's emergency line from a cell phone (ucpd.berkeley.edu).
-let ucpdPhone = URL(string: "tel://5106423333")!
 let emergencyPhone = URL(string: "tel://911")!
 
-/// Large + button in the map's bottom corner. Press and hold to reveal Report, UCPD, and 911,
+/// Large + button in the map's bottom corner. Press and hold to reveal Report, campus police, and 911,
 /// then slide onto one and let go to choose it. A quick tap opens the same options to tap.
 struct ActionFab: View {
     enum Action: CaseIterable {
-        case report, ucpd, emergency
-
-        var label: String {
-            switch self {
-            case .report: "Report"
-            case .ucpd: "UCPD"
-            case .emergency: "911"
-            }
-        }
+        case report, campusPolice, emergency
 
         var symbol: String {
             switch self {
             case .report: "exclamationmark.bubble.fill"
-            case .ucpd: "shield.lefthalf.filled"
+            case .campusPolice: "shield.lefthalf.filled"
             case .emergency: "phone.fill"
             }
         }
@@ -33,13 +23,25 @@ struct ActionFab: View {
         var offset: CGSize {
             switch self {
             case .emergency: CGSize(width: 0, height: -90)
-            case .ucpd: CGSize(width: -80, height: -72)
+            case .campusPolice: CGSize(width: -80, height: -72)
             case .report: CGSize(width: -92, height: 4)
             }
         }
     }
 
+    /// The campus police's short name (e.g. "UCPD"); without a known number that option is hidden.
+    var policeName: String?
     var onAction: (Action) -> Void
+
+    private var actions: [Action] { Action.allCases.filter { $0 != .campusPolice || policeName != nil } }
+
+    private func label(_ action: Action) -> String {
+        switch action {
+        case .report: "Report"
+        case .campusPolice: policeName ?? "Police"
+        case .emergency: "911"
+        }
+    }
 
     @State private var isOpen = false
     @State private var hovered: Action?
@@ -51,7 +53,7 @@ struct ActionFab: View {
         ZStack {
             // Only drawn while open: glass ignores .opacity, so hidden options would show through.
             if isOpen {
-                ForEach(Action.allCases, id: \.self) { action in
+                ForEach(actions, id: \.self) { action in
                     option(action)
                 }
             }
@@ -72,7 +74,7 @@ struct ActionFab: View {
                     .frame(width: 52, height: 52)
                     .glassEffect(action == .emergency ? .regular.tint(.red) : .regular.interactive(), in: .circle)
                     .scaleEffect(hovered == action ? 1.18 : 1)
-                Text(action.label)
+                Text(label(action))
                     .font(.caption.bold())
                     .shadow(color: .white.opacity(0.9), radius: 2)
             }
@@ -131,7 +133,7 @@ struct ActionFab: View {
     /// The option within reach of a point in the + button's own coordinates.
     private func action(at point: CGPoint) -> Action? {
         let center = CGPoint(x: size / 2, y: size / 2)
-        return Action.allCases.first { action in
+        return actions.first { action in
             let target = CGPoint(x: center.x + action.offset.width, y: center.y + action.offset.height)
             return hypot(point.x - target.x, point.y - target.y) < 36
         }

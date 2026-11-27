@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Report } from '../lib/data'
+import { useCampus, type CampusResource } from '../lib/campus'
 import { supabase } from '../lib/supabase'
 import { Bulb, LocationArrow, People, Warning } from './Icons'
 import { Sheet, Toggle } from './Sheet'
@@ -163,50 +164,50 @@ function IncidentTracker({ onOpenReport }: { onOpenReport: (report: Report) => v
   )
 }
 
-const RESOURCES: { title: string; items: { label: string; detail: string; href: string }[]; footer?: string }[] = [
-  {
-    title: 'Emergency',
-    items: [
-      { label: 'Emergency', detail: '911', href: 'tel:911' },
-      { label: 'UCPD Emergency from a Cell Phone', detail: '(510) 642-3333', href: 'tel:5106423333' },
-    ],
-    footer: 'Blue light phones on campus also connect straight to UCPD dispatch.',
-  },
-  {
-    title: 'UCPD Resources',
-    items: [
-      { label: 'UCPD Non-Emergency (24 hours)', detail: '(510) 642-6760', href: 'tel:5106426760' },
-      { label: 'SafeWalk Escort', detail: 'Dusk – 3 AM, last call 2:30 AM · (510) 642-WALK', href: 'tel:5106429255' },
-      { label: 'Night Safety Shuttle', detail: '7:30 PM – 3 AM · book in the Downtowner app', href: 'https://nightsafety.berkeley.edu/' },
-      { label: 'Night Safety Services', detail: 'nightsafety.berkeley.edu', href: 'https://nightsafety.berkeley.edu/' },
-      { label: 'Make a Report to UCPD', detail: 'ucpd.berkeley.edu', href: 'https://ucpd.berkeley.edu/make-report' },
-      { label: 'Resource Guide', detail: 'Campus safety support', href: 'https://supportal.berkeley.edu/topics/safety' },
-    ],
-  },
-  { title: 'Anonymous Tips', items: [{ label: 'CalTIP (text)', detail: '(510) 664-8477 · non-emergency crime', href: 'sms:5106648477' }] },
-  { title: 'City of Berkeley', items: [{ label: 'Berkeley Police Non-Emergency', detail: '(510) 981-5900', href: 'tel:5109815900' }] },
-]
-
-/** UC Berkeley hotlines, escorts, and emergency services. */
+/** The student's campus hotlines, escorts, and emergency services, each linked to its source. */
 function SafetyResources() {
+  const campus = useCampus()
+  const settingUp = !campus || campus.status === 'pending' || campus.status === 'generating'
+  const href = (item: CampusResource) => (item.phone ? `tel:${item.phone}` : (item.url ?? undefined))
+  const row = (item: CampusResource) => (
+    <div key={item.label} className="cell resource">
+      <a className="label" href={href(item)} target={item.phone || item.url?.startsWith('sms:') ? undefined : '_blank'} rel="noreferrer">
+        {item.label}
+        <small>{item.detail}</small>
+      </a>
+      {item.source_url && (
+        <a className="source-link" href={item.source_url} target="_blank" rel="noreferrer">
+          Source
+        </a>
+      )}
+    </div>
+  )
+
+  if (campus?.status === 'ready' && campus.resources.length > 0) {
+    return (
+      <>
+        {campus.resources.map((section) => (
+          <div key={section.title}>
+            <div className="group-title">{section.title}</div>
+            <div className="group">{section.items.map(row)}</div>
+            {section.footer && <div className="group-footer">{section.footer}</div>}
+          </div>
+        ))}
+        <div className="group-footer">
+          Found on {campus.short_name ?? campus.domain}'s official pages when the campus was set up. Tap Source to check a number.
+        </div>
+      </>
+    )
+  }
   return (
     <>
-      {RESOURCES.map((section) => (
-        <div key={section.title}>
-          <div className="group-title">{section.title}</div>
-          <div className="group">
-            {section.items.map((item) => (
-              <a key={item.label} className="cell resource" href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
-                <span className="label">
-                  {item.label}
-                  <small>{item.detail}</small>
-                </span>
-              </a>
-            ))}
-          </div>
-          {section.footer && <div className="group-footer">{section.footer}</div>}
-        </div>
-      ))}
+      <div className="group-title">Emergency</div>
+      <div className="group">{row({ label: 'Emergency', detail: '911', phone: '911', url: null, source_url: null })}</div>
+      <div className="group-footer">
+        {settingUp
+          ? "Looking up your campus's safety resources. This takes about a minute the first time anyone from your school signs in."
+          : "We couldn't find your campus's safety resources yet."}
+      </div>
     </>
   )
 }

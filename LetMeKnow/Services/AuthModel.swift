@@ -3,13 +3,13 @@ import Foundation
 import Observation
 import Supabase
 
-/// Sign in with a UC Berkeley Google account (F1).
+/// Sign in with a school (.edu) Google account (F1).
 @MainActor
 @Observable
 final class AuthModel {
     private(set) var isSignedIn = supabase.auth.currentSession != nil
     private(set) var email: String? = supabase.auth.currentUser?.email
-    /// Set when sign-in fails or a non-campus account tries to sign in.
+    /// Set when sign-in fails or a non-school account tries to sign in.
     var errorMessage: String?
 
     /// Remembered on this phone; unchecked means the next launch starts signed out.
@@ -22,7 +22,7 @@ final class AuthModel {
         }
         for await (_, session) in supabase.auth.authStateChanges {
             if let email = session?.user.email, !Self.isCampusEmail(email) {
-                errorMessage = "Use your @\(AppConfig.campusEmailDomain) Google account."
+                errorMessage = "Use your school (.edu) Google account."
                 await signOut()
                 continue
             }
@@ -32,10 +32,10 @@ final class AuthModel {
     }
 
     static func isCampusEmail(_ email: String) -> Bool {
-        email.trimmingCharacters(in: .whitespaces).lowercased().hasSuffix("@" + AppConfig.campusEmailDomain)
+        Campus.domain(of: email.trimmingCharacters(in: .whitespaces)) != nil
     }
 
-    /// Opens Google's sign-in, asking for a berkeley.edu account.
+    /// Opens Google's sign-in. Any school's Google account works; the database refuses non-.edu ones.
     func signInWithGoogle(staySignedIn: Bool) async {
         errorMessage = nil
         UserDefaults.standard.set(staySignedIn, forKey: Self.staySignedInKey)
@@ -43,13 +43,13 @@ final class AuthModel {
             _ = try await supabase.auth.signInWithOAuth(
                 provider: .google,
                 redirectTo: AppConfig.signInRedirect,
-                queryParams: [(name: "hd", value: AppConfig.campusEmailDomain), (name: "prompt", value: "select_account")]
+                queryParams: [(name: "prompt", value: "select_account")]
             )
         } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
             return
         } catch {
-            errorMessage = error.localizedDescription.contains("berkeley.edu")
-                ? "Use your @\(AppConfig.campusEmailDomain) Google account."
+            errorMessage = error.localizedDescription.contains(".edu") || error.localizedDescription.contains("saving new user")
+                ? "Use your school (.edu) Google account."
                 : "Couldn't sign in: \(error.localizedDescription)"
         }
     }

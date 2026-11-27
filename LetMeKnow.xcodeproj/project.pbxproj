@@ -14,6 +14,7 @@
 		261BA2C74DDA13C5431CFC35 /* RouteCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96ED4E03D89E398415A05B99 /* RouteCard.swift */; };
 		36C49114390AC83EC3824C9B /* Report.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E37C5C2647E2B7111C52DDE /* Report.swift */; };
 		3E8DB48F758C937796A49CCA /* SearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186EBF3668786E88CE438AB0 /* SearchSheet.swift */; };
+		4406736BA739E2F96E739950 /* CampusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A58C4D5B694072EFC4C1DED /* CampusStore.swift */; };
 		4463E1E607829FF8C8BD719D /* Streetlights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A803806738796B8DEEA94F4 /* Streetlights.swift */; };
 		5AD0F07ACF4F825BC30A7F1B /* MapScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F595ED27B5C63239BD312FAA /* MapScreen.swift */; };
 		5C3A575A924317764F30DB93 /* Navigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A8010BADA625C69F2F9C0FC /* Navigator.swift */; };
@@ -31,6 +32,7 @@
 		A85DBB00593AFC1408755DAF /* NavigationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 074A6EC341E0AB1D6FAB9BD1 /* NavigationViews.swift */; };
 		AEAF801E87F1896C5AB10A5D /* Notifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB87695DF6E188D240521C4 /* Notifier.swift */; };
 		BFD8FC82A595AD45BCC782C8 /* SavedPlaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110EB36142DD41223219CBB7 /* SavedPlaces.swift */; };
+		CB7181CF21253BEB1AFE436F /* Campus.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D4890038D0A8D048EA0C08 /* Campus.swift */; };
 		D43F03BEB1A3FFDE1C151826 /* GoogleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D856B517BE6C0432CDB349 /* GoogleMapView.swift */; };
 		F2116FF8D99061432B876266 /* RouteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9630D420F46EFC6D56E57BE5 /* RouteService.swift */; };
 		F2E46C47A60FE2511CF80A92 /* AccountSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FCC57F52B293B495143B0A2 /* AccountSync.swift */; };
@@ -49,6 +51,7 @@
 		3BB87695DF6E188D240521C4 /* Notifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifier.swift; sourceTree = "<group>"; };
 		45195546160F37760D480143 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		4973914096AB48ACF983AC62 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		4A58C4D5B694072EFC4C1DED /* CampusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusStore.swift; sourceTree = "<group>"; };
 		589742D3F4561A48C66FE383 /* LetMeKnow.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LetMeKnow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F14438C4C21F718C9DF0E4C /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
 		7122CA63D7EC1DA7CC48DB21 /* ReportSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportSheets.swift; sourceTree = "<group>"; };
@@ -62,6 +65,7 @@
 		9864C397695C3FA53F921840 /* RoutePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePreferences.swift; sourceTree = "<group>"; };
 		ACF84FADD400B90E5624FB80 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AF214D4616DF91F54FA762C4 /* LetMeKnowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetMeKnowApp.swift; sourceTree = "<group>"; };
+		B3D4890038D0A8D048EA0C08 /* Campus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Campus.swift; sourceTree = "<group>"; };
 		C71B22F11486F2E9C2405DD3 /* ReportsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsStore.swift; sourceTree = "<group>"; };
 		F484217B9A5C5AB4A57A692F /* streetlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = streetlights.json; sourceTree = "<group>"; };
 		F595ED27B5C63239BD312FAA /* MapScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapScreen.swift; sourceTree = "<group>"; };
@@ -87,6 +91,7 @@
 			children = (
 				2FCC57F52B293B495143B0A2 /* AccountSync.swift */,
 				5F14438C4C21F718C9DF0E4C /* AuthModel.swift */,
+				4A58C4D5B694072EFC4C1DED /* CampusStore.swift */,
 				85B63426FE1DE2F8BB565874 /* LocationManager.swift */,
 				1A8010BADA625C69F2F9C0FC /* Navigator.swift */,
 				3BB87695DF6E188D240521C4 /* Notifier.swift */,
@@ -149,6 +154,7 @@
 		D4A12A45127D1E8F9911C36C /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				B3D4890038D0A8D048EA0C08 /* Campus.swift */,
 				8E37C5C2647E2B7111C52DDE /* Report.swift */,
 				7A803806738796B8DEEA94F4 /* Streetlights.swift */,
 			);
@@ -260,6 +266,8 @@
 				F2E46C47A60FE2511CF80A92 /* AccountSync.swift in Sources */,
 				8857DF436FB50F2567B1BED1 /* AppConfig.swift in Sources */,
 				146C08524054FB2CE4A59C27 /* AuthModel.swift in Sources */,
+				CB7181CF21253BEB1AFE436F /* Campus.swift in Sources */,
+				4406736BA739E2F96E739950 /* CampusStore.swift in Sources */,
 				D43F03BEB1A3FFDE1C151826 /* GoogleMapView.swift in Sources */,
 				9D500F4BEEFFA681668612C3 /* LetMeKnowApp.swift in Sources */,
 				739B7568F8B5133E6FF1C907 /* LocationManager.swift in Sources */,

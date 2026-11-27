@@ -203,7 +203,7 @@ input, textarea { font: inherit; color: inherit; }
 .report-circle { background: var(--red); color: #fff; box-shadow: 0 4px 14px rgba(255, 59, 48, 0.35); }
 .recenter { align-self: flex-start; font-weight: 600; color: var(--tint); animation: drop-in 0.25s ease; }
 
-/* ── v2: + button with Report / UCPD / 911 ─── */
+/* ── + button with Report / campus police / 911 ─── */
 .bottom-bar { align-items: flex-end; }
 .bottom-right { display: flex; align-items: flex-end; gap: 12px; }
 .fab-area { position: relative; }
@@ -225,11 +225,11 @@ input, textarea { font: inherit; color: inherit; }
 .fab-options.open { pointer-events: auto; }
 .fab-options.open .fab-option { opacity: 1; }
 .fab-options.open .fab-option.call911 { transform: translate(0, -86px) scale(1); }
-.fab-options.open .fab-option.ucpd { transform: translate(-80px, -70px) scale(1); }
+.fab-options.open .fab-option.police { transform: translate(-80px, -70px) scale(1); }
 .fab-options.open .fab-option.report { transform: translate(-90px, 6px) scale(1); }
 .fab-option-icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; }
 .fab-option.report .fab-option-icon { color: var(--red); }
-.fab-option.ucpd .fab-option-icon { color: var(--tint); }
+.fab-option.police .fab-option-icon { color: var(--tint); }
 .fab-option.call911 .fab-option-icon { color: #fff; background: var(--red); }
 .fab-option.hovered .fab-option-icon { transform: scale(1.18); box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.35); }
 .fab-option-label { font-size: 12px; font-weight: 700; text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9); }
@@ -321,3 +321,5 @@ input, textarea { font: inherit; color: inherit; }
 /* Sign-in: Stay logged in */
 .checkbox { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; align-self: center; cursor: pointer; }
 .checkbox input { width: 18px; height: 18px; accent-color: var(--tint); }
+.cell.resource .label { color: inherit; text-decoration: none; }
+.source-link { font-size: 13px; color: var(--tint); text-decoration: none; flex: none; }

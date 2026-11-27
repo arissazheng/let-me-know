@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { MapScreen } from './components/MapScreen'
 import { SignIn } from './components/SignIn'
 import { config } from './lib/config'
+import { CampusContext, useCampusLoader } from './lib/campus'
 import { isCampusEmail, supabase } from './lib/supabase'
 
 export function App() {
@@ -11,13 +12,13 @@ export function App() {
   const [linkError, setLinkError] = useState<string | null>(null)
 
   useEffect(() => {
-    // A refused Google sign-in (e.g. not a berkeley.edu account) comes back with an error in the URL.
+    // A refused Google sign-in (e.g. not a school account) comes back with an error in the URL.
     const params = new URLSearchParams(window.location.search + window.location.hash.replace('#', '&'))
     const error = params.get('error_description')
     if (error)
       setLinkError(
-        error.includes('berkeley.edu') || error.includes('saving new user')
-          ? `Use your @${config.campusEmailDomain} Google account.`
+        error.includes('.edu') || error.includes('saving new user')
+          ? 'Use your school (.edu) Google account.'
           : `Couldn't sign in (${error}). Try again.`,
       )
 
@@ -25,9 +26,9 @@ export function App() {
       setSession(data.session?.user.email && isCampusEmail(data.session.user.email) ? data.session : null),
     )
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      // Only berkeley.edu accounts (the database also refuses others).
+      // Only school (.edu) accounts (the database also refuses others).
       if (next?.user.email && !isCampusEmail(next.user.email)) {
-        setLinkError(`Use your @${config.campusEmailDomain} Google account.`)
+        setLinkError('Use your school (.edu) Google account.')
         supabase.auth.signOut()
         return
       }
@@ -42,7 +43,14 @@ export function App() {
   if (!session) return <SignIn linkError={linkError} />
   return (
     <APIProvider apiKey={config.googleMapsApiKey} libraries={['places']}>
-      <MapScreen email={session.user.email} />
+      <CampusProvider email={session.user.email}>
+        <MapScreen email={session.user.email} />
+      </CampusProvider>
     </APIProvider>
   )
+}
+
+/** Loads the signed-in student's campus (setting it up the first time) for every screen below. */
+function CampusProvider({ email, children }: { email: string | undefined; children: React.ReactNode }) {
+  return <CampusContext.Provider value={useCampusLoader(email)}>{children}</CampusContext.Provider>
 }

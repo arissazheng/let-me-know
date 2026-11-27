@@ -88,53 +88,73 @@ struct IncidentTrackerView: View {
     }
 }
 
-/// UC Berkeley hotlines, escorts, and emergency services.
+/// The student's campus hotlines, escorts, and emergency services, looked up when the campus was
+/// first set up. Every number links back to the page it came from.
 struct SafetyResourcesView: View {
+    @Environment(CampusStore.self) private var campusStore
+
     var body: some View {
         List {
-            Section {
-                link("Emergency", detail: "911", systemImage: "phone.fill", url: "tel://911", tint: .red)
-                link("UCPD Emergency from a Cell Phone", detail: "(510) 642-3333", systemImage: "phone.fill", url: "tel://5106423333", tint: .red)
-            } header: {
-                Text("Emergency")
-            } footer: {
-                Text("Blue light phones on campus also connect straight to UCPD dispatch.")
-            }
-
-            Section("UCPD Resources") {
-                link("UCPD Non-Emergency (24 hours)", detail: "(510) 642-6760", systemImage: "phone", url: "tel://5106426760")
-                link("SafeWalk Escort", detail: "Dusk – 3 AM, last call 2:30 AM · (510) 642-WALK", systemImage: "figure.walk", url: "tel://5106429255")
-                link("Night Safety Shuttle", detail: "7:30 PM – 3 AM · book in the Downtowner app", systemImage: "bus", url: "https://nightsafety.berkeley.edu/")
-                link("Night Safety Services", detail: "nightsafety.berkeley.edu", systemImage: "moon.stars", url: "https://nightsafety.berkeley.edu/")
-                link("Make a Report to UCPD", detail: "ucpd.berkeley.edu", systemImage: "doc.text", url: "https://ucpd.berkeley.edu/make-report")
-                link("Resource Guide", detail: "Campus safety support", systemImage: "book", url: "https://supportal.berkeley.edu/topics/safety")
-            }
-
-            Section("Anonymous Tips") {
-                link("CalTIP (text)", detail: "(510) 664-8477 · non-emergency crime", systemImage: "message", url: "sms:5106648477")
-            }
-
-            Section("City of Berkeley") {
-                link("Berkeley Police Non-Emergency", detail: "(510) 981-5900", systemImage: "phone", url: "tel://5109815900")
+            if let campus = campusStore.campus, campus.status == .ready, !campus.resources.isEmpty {
+                ForEach(campus.resources, id: \.self) { section in
+                    Section {
+                        ForEach(section.items, id: \.self) { row($0, emergency: section == campus.resources.first) }
+                    } header: {
+                        Text(section.title)
+                    } footer: {
+                        if let footer = section.footer { Text(footer) }
+                    }
+                }
+                Section {
+                } footer: {
+                    Text("Found on \(campus.shortName ?? campus.domain)'s official pages when the campus was set up. Tap Source to check a number.")
+                }
+            } else {
+                Section {
+                    row(.init(label: "Emergency", detail: "911", phone: "911", url: nil, sourceURL: nil), emergency: true)
+                } header: {
+                    Text("Emergency")
+                } footer: {
+                    if campusStore.isSettingUp {
+                        Label("Looking up your campus's safety resources. This takes about a minute the first time anyone from your school signs in.", systemImage: "magnifyingglass")
+                    } else {
+                        Text("We couldn't find your campus's safety resources yet.")
+                    }
+                }
             }
         }
         .navigationTitle("Safety Resources")
     }
 
-    private func link(_ title: String, detail: String, systemImage: String, url: String, tint: Color = .accentColor) -> some View {
-        Link(destination: URL(string: url)!) {
-            Label {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).foregroundStyle(.primary)
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
+    private func row(_ item: Campus.Resource, emergency: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            if let link = item.link {
+                Link(destination: link) {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.label).foregroundStyle(.primary)
+                            Text(item.detail).font(.caption).foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: icon(for: item)).foregroundStyle(emergency ? Color.red : Color.blue)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(.rect)
                 }
-            } icon: {
-                Image(systemName: systemImage).foregroundStyle(tint)
+                .buttonStyle(.plain)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(.rect)
+            if let source = item.sourceURL.flatMap(URL.init(string:)) {
+                Link("Source", destination: source)
+                    .font(.caption)
+                    .buttonStyle(.borderless)
+            }
         }
-        .buttonStyle(.plain)
+    }
+
+    private func icon(for item: Campus.Resource) -> String {
+        if item.phone != nil { return "phone.fill" }
+        if item.url?.hasPrefix("sms:") == true { return "message" }
+        return "safari"
     }
 }
 

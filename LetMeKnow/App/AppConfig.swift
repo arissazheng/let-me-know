@@ -8,8 +8,6 @@ enum AppConfig {
     static let supabaseAnonKey = value("SupabaseAnonKey")
     static let valhallaURL = URL(string: value("ValhallaURL"))!
 
-    /// Only verified campus emails can sign in (F1).
-    static let campusEmailDomain = "berkeley.edu"
     /// Must also be listed under Supabase → Authentication → URL Configuration → Redirect URLs.
     static let signInRedirect = URL(string: "letmeknow://login-callback")!
 

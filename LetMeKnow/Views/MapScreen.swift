@@ -4,6 +4,8 @@ import SwiftUI
 /// The home screen: map, live reports, glows, search, safer routes, and reporting.
 struct MapScreen: View {
     @State private var reportsStore = ReportsStore()
+    @State private var campusStore = CampusStore()
+    @Environment(AuthModel.self) private var auth
     @State private var population = PopulationStore()
     @State private var location = LocationManager()
     @State private var navigator = Navigator()
@@ -144,8 +146,15 @@ struct MapScreen: View {
                 Task { await planRoute() }
             }
         }
-        .sheet(isPresented: $isShowingSettings) { SettingsView() }
+        .sheet(isPresented: $isShowingSettings) { SettingsView().environment(campusStore) }
         .task { location.start() }
+        .task(id: auth.email) { await campusStore.load(for: auth.email) }
+        // Without the student's location yet, start the map on their campus.
+        .onChange(of: campusStore.campus?.status) {
+            guard location.coordinate == nil, let center = campusStore.campus?.center else { return }
+            focus = center
+            focusToken += 1
+        }
         // Reports from every student arrive live; reloading on return to the app and once a minute
         // catches anything filed while the phone slept and drops reports older than 24 hours.
         .task(id: scenePhase) {
@@ -307,7 +316,7 @@ struct MapScreen: View {
             }
         } else {
             GlassEffectContainer(spacing: 16) {
-                // Left side stays clear of the + button's Report / UCPD / 911 fan.
+                // Left side stays clear of the + button's Report / campus police / 911 fan.
                 HStack(alignment: .bottom, spacing: 12) {
                     Button("Settings", systemImage: "gearshape") { isShowingSettings = true }
                         .labelStyle(.iconOnly)
@@ -316,7 +325,7 @@ struct MapScreen: View {
                         .glassEffect(.regular.interactive(), in: .circle)
 
                     Button("My Location", systemImage: "location.fill") {
-                        focus = location.coordinate ?? GoogleMapView.berkeley
+                        focus = location.coordinate ?? campusStore.campus?.center ?? GoogleMapView.berkeley
                         focusToken += 1
                     }
                     .labelStyle(.iconOnly)
@@ -333,12 +342,13 @@ struct MapScreen: View {
         }
     }
 
-    /// Hold the + button and slide to Report, UCPD, or 911.
+    /// Hold the + button and slide to Report, campus police, or 911.
     private var actionFab: some View {
-        ActionFab { action in
+        ActionFab(policeName: campusStore.campus?.policePhone == nil ? nil : campusStore.campus?.policeName) { action in
             switch action {
             case .report: isPlacingReport = true
-            case .ucpd: openURL(ucpdPhone)
+            case .campusPolice:
+                if let phone = campusStore.campus?.policePhone, let url = URL(string: "tel://\(phone)") { openURL(url) }
             case .emergency: openURL(emergencyPhone)
             }
         }

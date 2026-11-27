@@ -2,24 +2,21 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { reportMedia, type MediaItem, type Report } from '../lib/data'
 import { Clock, Close, ReportBubble } from './Icons'
 
-/** UCPD's emergency line from a cell phone (ucpd.berkeley.edu). */
-export const UCPD_PHONE = '5106423333'
-
-type FabAction = 'report' | 'ucpd' | '911'
+type FabAction = 'report' | 'police' | '911'
 
 /**
- * Large + button in the map's bottom corner. Press and hold to reveal Report, UCPD, and 911,
+ * Large + button in the map's bottom corner. Press and hold to reveal Report, campus police, and 911,
  * then slide onto one and let go to choose it. A quick tap opens the same options to tap.
  */
-export function ActionFab({ onAction }: { onAction: (action: FabAction) => void }) {
+export function ActionFab({ policeName, onAction }: { policeName: string | null; onAction: (action: FabAction) => void }) {
   const [open, setOpen] = useState(false)
   const [hovered, setHovered] = useState<FabAction | null>(null)
   const holdTimer = useRef<number | undefined>(undefined)
   const held = useRef(false)
-  const refs = { report: useRef<HTMLButtonElement>(null), ucpd: useRef<HTMLButtonElement>(null), '911': useRef<HTMLButtonElement>(null) }
+  const refs = { report: useRef<HTMLButtonElement>(null), police: useRef<HTMLButtonElement>(null), '911': useRef<HTMLButtonElement>(null) }
 
   const actionAt = (x: number, y: number): FabAction | null => {
-    for (const action of ['report', 'ucpd', '911'] as const) {
+    for (const action of ['report', 'police', '911'] as const) {
       const r = refs[action].current?.getBoundingClientRect()
       if (r && x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8) return action
     }
@@ -39,9 +36,11 @@ export function ActionFab({ onAction }: { onAction: (action: FabAction) => void 
         <FabOption ref={refs['911']} action="911" label="911" hovered={hovered} onChoose={choose}>
           <svg viewBox="0 0 24 24" className="icon" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1Z" /></svg>
         </FabOption>
-        <FabOption ref={refs.ucpd} action="ucpd" label="UCPD" hovered={hovered} onChoose={choose}>
+        {policeName && (
+        <FabOption ref={refs.police} action="police" label={policeName} hovered={hovered} onChoose={choose}>
           <svg viewBox="0 0 24 24" className="icon" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.6 8 11 4.6-1.4 8-6 8-11V5l-8-3Zm0 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Zm0 12.2a8.3 8.3 0 0 1-4.6-4.1c.6-1.4 2.6-2.1 4.6-2.1s4 .7 4.6 2.1a8.3 8.3 0 0 1-4.6 4.1Z" /></svg>
         </FabOption>
+        )}
         <FabOption ref={refs.report} action="report" label="Report" hovered={hovered} onChoose={choose}>
           <ReportBubble />
         </FabOption>

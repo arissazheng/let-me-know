@@ -11,7 +11,8 @@ import { Check, Filter, Gear, Locate, Pin, Search } from './Icons'
 import { FocusOn, GlowLayers, NavigationCamera, ReportPins, RouteLines, UserDot } from './MapLayers'
 import { NavigationBar, RerouteAlert, TurnBanner } from './Navigation'
 import { RouteCard } from './RouteCard'
-import { ActionFab, ReportForm, ReportView, UCPD_PHONE } from './ReportCards'
+import { ActionFab, ReportForm, ReportView } from './ReportCards'
+import { useCampus } from '../lib/campus'
 import { SettingsSheet } from './Settings'
 import { SearchSheet, type Destination } from './Sheets'
 
@@ -26,6 +27,13 @@ export function MapScreen({ email }: { email?: string }) {
   const [showLights, setShowLights] = usePref('showLightGlow', true)
   const [showPopulation, setShowPopulation] = usePref('showPopulationGlow', true)
 
+  const campus = useCampus()
+  const campusCenter = campus?.lat != null && campus.lng != null ? { lat: campus.lat, lng: campus.lng } : null
+  // Without the student's location yet, start the map on their campus.
+  useEffect(() => {
+    if (campusCenter && !location) focusOn(campusCenter)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campus?.domain, campus?.status])
   const { reports, latestLive, error: reportsError } = useReports()
   const { cells, crowdLevel } = usePopulation()
   const { location, heading } = useLocation(shareLocation[0])
@@ -137,12 +145,13 @@ export function MapScreen({ email }: { email?: string }) {
 
   const message = reportsError ?? routeError
 
-  // Hold the + button and slide to Report, UCPD, or 911.
+  // Hold the + button and slide to Report, campus police, or 911.
   const fab = (
     <ActionFab
+      policeName={campus?.police_phone ? campus.police_name : null}
       onAction={(action) => {
         if (action === 'report') setPlacing(true)
-        else window.location.href = action === 'ucpd' ? `tel:${UCPD_PHONE}` : 'tel:911'
+        else window.location.href = action === 'police' ? `tel:${campus?.police_phone}` : 'tel:911'
       }}
     />
   )
@@ -173,7 +182,7 @@ export function MapScreen({ email }: { email?: string }) {
           onSelect={setSelectedRouteId}
         />
         <UserDot location={location} />
-        <FocusOn target={focusTarget ?? location ?? BERKELEY} token={focusToken} />
+        <FocusOn target={focusTarget ?? location ?? campusCenter ?? BERKELEY} token={focusToken} />
         <NavigationCamera navigating={!!nav} following={following} location={location} heading={heading} />
       </Map>
 

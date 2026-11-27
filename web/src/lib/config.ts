@@ -10,8 +10,6 @@ export const config = {
   supabaseUrl: required('VITE_SUPABASE_URL'),
   supabaseAnonKey: required('VITE_SUPABASE_ANON_KEY'),
   valhallaUrl: required('VITE_VALHALLA_URL'),
-  /** Only verified campus emails can sign in (F1). */
-  campusEmailDomain: 'berkeley.edu',
 }
 
 export const BERKELEY = { lat: 37.869, lng: -122.2595 }

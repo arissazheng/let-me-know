@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { campusDomain } from './campus'
 import { config } from './config'
 
 /** Whether to keep the session after the browser closes ("Stay logged in" on the sign-in page). */
@@ -46,11 +47,12 @@ export const supabase = createClient(config.supabaseUrl, config.supabaseAnonKey,
   auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, storage: authStorage },
 })
 
+/** Any school (.edu) account; the database refuses others too. */
 export function isCampusEmail(email: string) {
-  return email.trim().toLowerCase().endsWith('@' + config.campusEmailDomain)
+  return campusDomain(email) !== null
 }
 
-/** F1: sends the student to Google, asking for a berkeley.edu account, and back to this site. */
+/** F1: sends the student to Google to pick their school account, and back to this site. */
 export async function signInWithGoogle(stay: boolean) {
   try {
     localStorage.setItem(STAY_SIGNED_IN, String(stay))
@@ -61,7 +63,7 @@ export async function signInWithGoogle(stay: boolean) {
     provider: 'google',
     options: {
       redirectTo: window.location.origin + window.location.pathname,
-      queryParams: { hd: config.campusEmailDomain, prompt: 'select_account' },
+      queryParams: { prompt: 'select_account' },
     },
   })
   if (error) throw error
