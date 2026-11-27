@@ -38,6 +38,11 @@ export const Check = ({ className = 'icon' }: Props) => (
 export const Clock = ({ className = 'icon' }: Props) => (
   <svg {...base} className={className}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
 )
+export const Star = ({ className = 'icon', filled = false }: Props & { filled?: boolean }) => (
+  <svg {...base} className={className} fill={filled ? 'currentColor' : 'none'}>
+    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z" />
+  </svg>
+)
 export const Warning = ({ className = 'icon' }: Props) => (
   <svg {...base} className={className}><path d="M12 3 2 20h20L12 3Z" /><path d="M12 10v4M12 17v.5" /></svg>
 )

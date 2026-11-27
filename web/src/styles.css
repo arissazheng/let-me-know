@@ -289,3 +289,13 @@ input, textarea { font: inherit; color: inherit; }
 .link-button { color: var(--tint); font-weight: 600; font-size: 15px; padding: 2px 0 0; }
 .circle-sm { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; }
 .circle-sm svg { width: 14px; height: 14px; }
+
+/* Search sheet: starred places and recent searches */
+.place-row { display: flex; align-items: center; }
+.place-row + .place-row { border-top: 0.5px solid var(--separator); }
+.place-row .suggestion { flex: 1; min-width: 0; }
+.suggestion.recent { display: flex; align-items: center; gap: 10px; }
+.star-button { padding: 12px 14px; color: var(--secondary-label); display: grid; place-items: center; }
+.star-button.on { color: #ffcc00; }
+.favorite-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; }
+.favorite-chip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-weight: 600; font-size: 15px; }

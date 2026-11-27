@@ -28,6 +28,7 @@
 		9D63C2E0DEC29D0AC91C1B13 /* ReportsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71B22F11486F2E9C2405DD3 /* ReportsStore.swift */; };
 		A2682BD7CA1F419281D94955 /* GoogleMapsUtils in Frameworks */ = {isa = PBXBuildFile; productRef = 8C0FCE385465EB6B6CD4D54C /* GoogleMapsUtils */; };
 		A85DBB00593AFC1408755DAF /* NavigationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 074A6EC341E0AB1D6FAB9BD1 /* NavigationViews.swift */; };
+		BFD8FC82A595AD45BCC782C8 /* SavedPlaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110EB36142DD41223219CBB7 /* SavedPlaces.swift */; };
 		D43F03BEB1A3FFDE1C151826 /* GoogleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D856B517BE6C0432CDB349 /* GoogleMapView.swift */; };
 		F2116FF8D99061432B876266 /* RouteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9630D420F46EFC6D56E57BE5 /* RouteService.swift */; };
 		F9BF1DD708CA2383929A040F /* RoutePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9864C397695C3FA53F921840 /* RoutePreferences.swift */; };
@@ -35,6 +36,7 @@
 
 /* Begin PBXFileReference section */
 		074A6EC341E0AB1D6FAB9BD1 /* NavigationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationViews.swift; sourceTree = "<group>"; };
+		110EB36142DD41223219CBB7 /* SavedPlaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedPlaces.swift; sourceTree = "<group>"; };
 		186EBF3668786E88CE438AB0 /* SearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchSheet.swift; sourceTree = "<group>"; };
 		1A8010BADA625C69F2F9C0FC /* Navigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Navigator.swift; sourceTree = "<group>"; };
 		27EA1302C1855AD0FE8BD11D /* PopulationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopulationStore.swift; sourceTree = "<group>"; };
@@ -84,6 +86,7 @@
 				C71B22F11486F2E9C2405DD3 /* ReportsStore.swift */,
 				9864C397695C3FA53F921840 /* RoutePreferences.swift */,
 				9630D420F46EFC6D56E57BE5 /* RouteService.swift */,
+				110EB36142DD41223219CBB7 /* SavedPlaces.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -260,6 +263,7 @@
 				261BA2C74DDA13C5431CFC35 /* RouteCard.swift in Sources */,
 				F9BF1DD708CA2383929A040F /* RoutePreferences.swift in Sources */,
 				F2116FF8D99061432B876266 /* RouteService.swift in Sources */,
+				BFD8FC82A595AD45BCC782C8 /* SavedPlaces.swift in Sources */,
 				3E8DB48F758C937796A49CCA /* SearchSheet.swift in Sources */,
 				6C2DE6BC042D557E5094562E /* SettingsView.swift in Sources */,
 				8E97A3E5DBC5142E0472013C /* SignInView.swift in Sources */,

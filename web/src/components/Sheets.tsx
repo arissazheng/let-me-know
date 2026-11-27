@@ -1,12 +1,13 @@
 import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { useEffect, useRef, useState } from 'react'
 import type { LatLng } from '../lib/geo'
-import { Bulb, LocationArrow, People, Search, Warning } from './Icons'
+import { useSavedPlaces, type SavedPlace } from '../lib/savedPlaces'
+import { Bulb, Clock, Close, LocationArrow, People, Search, Star, Warning } from './Icons'
 import { Sheet, Toggle } from './Sheet'
 
 export type Destination = { name: string; location: LatLng }
 
-/** F5: enter a destination. */
+/** F5: enter a destination, with starred places and recent searches. Also used to type where an incident happened. */
 export function SearchSheet({
   title = 'Where to?',
   near,
@@ -23,6 +24,7 @@ export function SearchSheet({
   const [suggestions, setSuggestions] = useState<google.maps.places.AutocompleteSuggestion[]>([])
   const [error, setError] = useState<string | null>(null)
   const token = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
+  const saved = useSavedPlaces()
 
   useEffect(() => {
     if (!places) return
@@ -48,19 +50,34 @@ export function SearchSheet({
     return () => clearTimeout(timer)
   }, [places, query, near])
 
-  async function pick(s: google.maps.places.AutocompleteSuggestion) {
+  async function fetchPlace(s: google.maps.places.AutocompleteSuggestion): Promise<SavedPlace | null> {
     const prediction = s.placePrediction
-    if (!prediction) return
+    if (!prediction) return null
     try {
       const place = prediction.toPlace()
       await place.fetchFields({ fields: ['displayName', 'location'] })
-      if (!place.location) return
+      if (!place.location) return null
       token.current = null
-      onPick({ name: place.displayName ?? prediction.mainText?.text ?? 'Destination', location: place.location.toJSON() })
-      onClose()
+      return { name: place.displayName ?? prediction.mainText?.text ?? 'Destination', location: place.location.toJSON() }
     } catch (e) {
       setError(`Couldn't load that place: ${(e as Error).message}`)
+      return null
     }
+  }
+
+  function choose(place: SavedPlace) {
+    saved.addRecent(place)
+    onPick(place)
+    onClose()
+  }
+
+  const star = (name: string, onToggle: () => void) => {
+    const on = saved.isFavorite(name)
+    return (
+      <button className={`star-button${on ? ' on' : ''}`} onClick={onToggle} aria-label={on ? 'Remove from Favorites' : 'Add to Favorites'}>
+        <Star filled={on} />
+      </button>
+    )
   }
 
   return (
@@ -70,17 +87,58 @@ export function SearchSheet({
         <input autoFocus placeholder="Search for a place" value={query} onChange={(e) => setQuery(e.target.value)} />
       </label>
       {error && <div className="group-footer destructive">{error}</div>}
-      {suggestions.length > 0 && (
-        <div className="group">
-          {suggestions.map((s) =>
-            s.placePrediction ? (
-              <button key={s.placePrediction.placeId} className="suggestion" onClick={() => pick(s)}>
-                {s.placePrediction.mainText?.text ?? s.placePrediction.text.text}
-                <small>{s.placePrediction.secondaryText?.text}</small>
-              </button>
-            ) : null,
+      {query.trim() ? (
+        suggestions.length > 0 && (
+          <div className="group">
+            {suggestions.map((s) => {
+              const p = s.placePrediction
+              if (!p) return null
+              const name = p.mainText?.text ?? p.text.text
+              return (
+                <div key={p.placeId} className="place-row">
+                  <button className="suggestion" onClick={async () => { const place = await fetchPlace(s); if (place) choose(place) }}>
+                    {name}
+                    <small>{p.secondaryText?.text}</small>
+                  </button>
+                  {star(name, async () => { const place = await fetchPlace(s); if (place) saved.toggleFavorite(place) })}
+                </div>
+              )
+            })}
+          </div>
+        )
+      ) : (
+        <>
+          {saved.favorites.length > 0 && (
+            <>
+              <div className="group-title">Favorites</div>
+              <div className="favorite-chips">
+                {saved.favorites.map((place) => (
+                  <button key={place.name} className="btn-glass glass glass-interactive favorite-chip" onClick={() => choose(place)}>
+                    <Star className="icon-sm" filled /> {place.name}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
-        </div>
+          {saved.recents.length > 0 && (
+            <>
+              <div className="group-title">Recent</div>
+              <div className="group">
+                {saved.recents.map((place) => (
+                  <div key={place.name} className="place-row">
+                    <button className="suggestion recent" onClick={() => choose(place)}>
+                      <Clock className="icon-sm" /> {place.name}
+                    </button>
+                    {star(place.name, () => saved.toggleFavorite(place))}
+                    <button className="star-button" onClick={() => saved.removeRecent(place)} aria-label="Remove from Recent">
+                      <Close className="icon-sm" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
       )}
     </Sheet>
   )
