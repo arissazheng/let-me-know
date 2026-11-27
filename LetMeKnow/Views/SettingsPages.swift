@@ -148,10 +148,9 @@ struct AboutView: View {
                 }
                 .padding(.vertical, 6)
             }
-            Section("Team 14 · UGBA 190D") {
-                ForEach(["Arissa Zheng", "Arushi Desai", "Kevin Padilla", "Adonis Som", "Runn Kiriruangchai", "Sarah Elnahas"], id: \.self) {
-                    Text($0)
-                }
+            Section("Why We Built This") {
+                Text("Students regularly run into things like being followed, harassment, or aggressive behavior on their way around campus, and other students walking the same streets usually never hear about it. We built Let Me Know so students can warn each other the moment something happens and pick a safer way to get where they're going.")
+                    .padding(.vertical, 4)
             }
             Section("Data") {
                 LabeledContent("Streetlights", value: "City of Berkeley")

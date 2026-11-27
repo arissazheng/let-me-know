@@ -223,8 +223,6 @@ function SafetyResources() {
   )
 }
 
-const TEAM = ['Arissa Zheng', 'Arushi Desai', 'Kevin Padilla', 'Adonis Som', 'Runn Kiriruangchai', 'Sarah Elnahas']
-
 function About() {
   return (
     <>
@@ -235,11 +233,11 @@ function About() {
           safer routes that avoid them, stay on lit streets, and keep to busier areas.
         </p>
       </div>
-      <div className="group-title">Team 14 · UGBA 190D</div>
-      <div className="group">
-        {TEAM.map((name) => (
-          <div key={name} className="cell"><span className="label">{name}</span></div>
-        ))}
+      <div className="group-title">Why We Built This</div>
+      <div className="group about">
+        <p>
+          Students regularly run into things like being followed, harassment, or aggressive behavior on their way around campus, and other students walking the same streets usually never hear about it. We built Let Me Know so students can warn each other the moment something happens and pick a safer way to get where they're going.
+        </p>
       </div>
       <div className="group-title">Data</div>
       <div className="group">
